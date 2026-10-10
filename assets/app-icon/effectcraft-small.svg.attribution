@@ -1,8 +1,8 @@
 asset:        effectcraft-small.svg
-title:        EffectCraft app icon, light vector
-author:       EffectCraft contributors (drawing by the project owner in ArtCraft)
-source:       original work
+title:        ShibShib effectat app icon
+author:       Hamza Abu Ayyash (ShibShib)
+source:       original work (the effectat tile, ~/Documents/ShibShib/file icons/effectat.svg, clipped to the rounded app tile)
 license:      MIT OR Apache-2.0
 license-file: assets/app-icon/LICENSE.txt
-added:        2026-10-02 by EffectCraft contributors (Claude agent, app icon)
-notes:        The same drawing vectorised at 1024 px with craftrules vectorize_tile.py, about 350 KB, for places where size matters.
+added:        2026-10-10 for the ShibShib project
+notes:        Rendered from assets/app-icon/effectcraft.svg by packaging/icons.sh. Replaces upstream EffectCraft's icon.

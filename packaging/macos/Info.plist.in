@@ -7,13 +7,13 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>EffectCraft</string>
+  <string>ShibShib effectat</string>
   <key>CFBundleName</key>
-  <string>EffectCraft</string>
+  <string>ShibShib effectat</string>
   <key>CFBundleExecutable</key>
   <string>EffectCraft</string>
   <key>CFBundleIdentifier</key>
-  <string>ai.storyteller.effectcraft</string>
+  <string>com.shibshib.effectat</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>
