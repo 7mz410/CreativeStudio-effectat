@@ -20,6 +20,9 @@ KEEP = ('the EffectCraft authors', 'EffectCraft Intro')
 
 # Exact replacements, applied before the general rename (and kept idempotent: skipped once done).
 RTL_RULES = [
+    ('crates/ui-egui/src/header.rs', 'use crate::icons::{self, Icon};', 'use crate::icons::Icon;'),
+    ('crates/ui-egui/src/header.rs', '    let discord = Rect::from_min_max(pos2(rx - 104.0, cy - 13.0), pos2(rx, cy + 13.0));', '    // ShibShib: no community Discord button yet (an empty slot keeps the layout code as is).\n    let discord = Rect::from_min_max(pos2(rx, cy - 13.0), pos2(rx, cy + 13.0));'),
+    ('crates/ui-egui/src/header.rs', '    let dc = Color32::from_rgb(0x58, 0x65, 0xf2);\n    p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });\n    icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 16.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);\n    p.text(pos2(discord.min.x + 28.0, cy), Align2::LEFT_CENTER, tr("Discord"), Tokens::semibold(12.0), Color32::WHITE);\n', ''),
     ('crates/engine/src/tests.rs', 'unwrap()["url"], "https://github.com/storytold/effectcraft");', 'unwrap()["url"], "https://github.com/7mz410/ShibShib-effectat");'),
     # Links (crates/engine/src/links.rs) and the ArtCraft mark (upstream's docs/brand/, removed).
     ('crates/engine/src/links.rs', 'pub const WEBSITE: &str = "https://getartcraft.com";', 'pub const WEBSITE: &str = "https://shibshib.art";'),
@@ -118,7 +121,7 @@ def apply_rtl_rules() -> list:
     for rel, a, b in RTL_RULES:
         path = ROOT / rel
         src = path.read_text(encoding='utf-8')
-        if b not in src and a in src:
+        if (not b or b not in src) and a in src:
             path.write_text(src.replace(a, b), encoding='utf-8')
             changed.append(path)
     return changed
