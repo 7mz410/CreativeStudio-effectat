@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
-"""Apply the ShibShib effectat branding on top of upstream EffectCraft.
+"""Apply the effectat branding on top of upstream EffectCraft.
 
 Only user-visible text is rebranded; crate names, file formats and other internals keep their
 upstream names so `git merge upstream/main` stays easy. The script is idempotent: after merging
 upstream, resolve any conflicts in favour of upstream and run it again.
 
-    python3 shibshib/rebrand.py
+    python3 studio/rebrand.py
 """
 import json
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-NAME = 'ShibShib effectat'
-REPO = 'https://github.com/7mz410/ShibShib-effectat'
-SITE = 'https://shibshib.art'
+NAME = 'effectat'
+REPO = 'https://github.com/7mz410/CreativeStudio-effectat'
+SITE = 'https://studio.creative.ps'
 # Persisted names that saved catalogs and presets refer to; renaming them would break those.
 KEEP = ('the EffectCraft authors', 'EffectCraft Intro')
 
 # Exact replacements, applied before the general rename (and kept idempotent: skipped once done).
 RTL_RULES = [
     ('crates/ui-egui/src/header.rs', 'use crate::icons::{self, Icon};', 'use crate::icons::Icon;'),
-    ('crates/ui-egui/src/header.rs', '    let discord = Rect::from_min_max(pos2(rx - 104.0, cy - 13.0), pos2(rx, cy + 13.0));', '    // ShibShib: no community Discord button yet (an empty slot keeps the layout code as is).\n    let discord = Rect::from_min_max(pos2(rx, cy - 13.0), pos2(rx, cy + 13.0));'),
+    ('crates/ui-egui/src/header.rs', '    let discord = Rect::from_min_max(pos2(rx - 104.0, cy - 13.0), pos2(rx, cy + 13.0));', '    // Creative Studio: no community Discord button yet (an empty slot keeps the layout code as is).\n    let discord = Rect::from_min_max(pos2(rx, cy - 13.0), pos2(rx, cy + 13.0));'),
     ('crates/ui-egui/src/header.rs', '    let dc = Color32::from_rgb(0x58, 0x65, 0xf2);\n    p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });\n    icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 16.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);\n    p.text(pos2(discord.min.x + 28.0, cy), Align2::LEFT_CENTER, tr("Discord"), Tokens::semibold(12.0), Color32::WHITE);\n', ''),
-    ('crates/engine/src/tests.rs', 'unwrap()["url"], "https://github.com/storytold/effectcraft");', 'unwrap()["url"], "https://github.com/7mz410/ShibShib-effectat");'),
+    ('crates/engine/src/tests.rs', 'unwrap()["url"], "https://github.com/storytold/effectcraft");', 'unwrap()["url"], "https://github.com/7mz410/CreativeStudio-effectat");'),
     # Links (crates/engine/src/links.rs) and the ArtCraft mark (upstream's docs/brand/, removed).
-    ('crates/engine/src/links.rs', 'pub const WEBSITE: &str = "https://getartcraft.com";', 'pub const WEBSITE: &str = "https://shibshib.art";'),
-    ('crates/engine/src/links.rs', 'pub const APP_PAGE: &str = "https://getartcraft.com/apps/effectcraft";', 'pub const APP_PAGE: &str = "https://shibshib.art";'),
-    ('crates/engine/src/links.rs', 'pub const GITHUB: &str = "https://github.com/storytold/effectcraft";', 'pub const GITHUB: &str = "https://github.com/7mz410/ShibShib-effectat";'),
-    ('crates/engine/src/links.rs', 'pub const ISSUES: &str = "https://github.com/storytold/effectcraft/issues";', 'pub const ISSUES: &str = "https://github.com/7mz410/ShibShib-effectat/issues";'),
+    ('crates/engine/src/links.rs', 'pub const WEBSITE: &str = "https://getartcraft.com";', 'pub const WEBSITE: &str = "https://studio.creative.ps";'),
+    ('crates/engine/src/links.rs', 'pub const APP_PAGE: &str = "https://getartcraft.com/apps/effectcraft";', 'pub const APP_PAGE: &str = "https://studio.creative.ps";'),
+    ('crates/engine/src/links.rs', 'pub const GITHUB: &str = "https://github.com/storytold/effectcraft";', 'pub const GITHUB: &str = "https://github.com/7mz410/CreativeStudio-effectat";'),
+    ('crates/engine/src/links.rs', 'pub const ISSUES: &str = "https://github.com/storytold/effectcraft/issues";', 'pub const ISSUES: &str = "https://github.com/7mz410/CreativeStudio-effectat/issues";'),
     ('crates/ui-egui/src/header.rs', 'include_bytes!("../../../docs/brand/artcraft-mark.png")', 'include_bytes!("../../../assets/app-icon/effectcraft-1024.png")'),
 ]
 
@@ -36,9 +36,9 @@ SPECIFIC = {
 }
 # Exact replacements inside string literals and catalogs, before the general rename.
 LITERALS = [
-    ('EffectCraft on getartcraft.com', 'ShibShib Website'),
-    ('EffectCraft Home Page', 'ShibShib Website'),
-    ('ArtCraft Website', 'ShibShib Project'),
+    ('EffectCraft on getartcraft.com', 'Creative Studio Website'),
+    ('EffectCraft Home Page', 'Creative Studio Website'),
+    ('ArtCraft Website', 'Creative Studio Project'),
     ('Join the ArtCraft Discord', 'Upstream Community on Discord'),
     ('Join the ArtCraft community on Discord', 'The upstream ArtCraft community on Discord'),
 ]
@@ -106,7 +106,7 @@ def rebrand_locale(path: Path) -> bool:
 def rebrand_plist(path: Path) -> bool:
     src = path.read_text(encoding='utf-8')
     out = re.sub(r'(<key>CFBundle(?:Display)?Name</key>\s*<string>)EffectCraft(</string>)', rf'\g<1>{NAME}\2', src)
-    out = out.replace('<string>ai.storyteller.effectcraft</string>', '<string>com.shibshib.effectat</string>')
+    out = out.replace('<string>ai.storyteller.effectcraft</string>', '<string>ps.creative.studio.effectat</string>')
     if out != src:
         path.write_text(out, encoding='utf-8')
     return out != src

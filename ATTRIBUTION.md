@@ -16,23 +16,23 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/fonts/Inter-Italic.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/NotoSerif-Regular.ttf` | The Noto Project Authors | https://github.com/notofonts/latin-greek-cyrillic | OFL-1.1 (`assets/fonts/OFL-NotoSerif.txt`) |
 | `assets/fonts/JetBrainsMono-Regular.ttf` | The JetBrains Mono Project Authors | https://github.com/JetBrains/JetBrainsMono | OFL-1.1 (`assets/fonts/OFL-JetBrainsMono.txt`) |
-| `apps/effectcraft-web/web/favicon.svg` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `packaging/macos/dmg/background.svg` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
-| `assets/app-icon/effectcraft-1024.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/effectcraft-macos-512.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/effectcraft-small.svg` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/effectcraft.icns` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/effectcraft.ico` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/effectcraft.svg` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/128x128/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/16x16/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/24x24/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/256x256/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/32x32/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/48x48/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/512x512/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/64x64/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `assets/app-icon/hicolor/scalable/apps/ai.storyteller.effectcraft.svg` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `apps/effectcraft-web/web/favicon.svg` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `packaging/macos/dmg/background.svg` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
+| `assets/app-icon/effectcraft-1024.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/effectcraft-macos-512.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/effectcraft-small.svg` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/effectcraft.icns` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/effectcraft.ico` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/effectcraft.svg` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/128x128/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/16x16/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/24x24/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/256x256/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/32x32/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/48x48/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/512x512/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/64x64/apps/ai.storyteller.effectcraft.png` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
+| `assets/app-icon/hicolor/scalable/apps/ai.storyteller.effectcraft.svg` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat app icon (the effectat tile) | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
 | `crates/lottie/tests/fixtures/bouncing-ball.json` | EffectCraft contributors | Original work: hand-written Lottie test fixture (bouncing ball, eased position keys) | MIT OR Apache-2.0 |
 | `crates/lottie/tests/fixtures/shapes-gradient.json` | EffectCraft contributors | Original work: hand-written Lottie test fixture (star, rectangle, gradient fill, dashed stroke, trim paths) | MIT OR Apache-2.0 |
 | `crates/lottie/tests/fixtures/precomp-matte-text.json` | EffectCraft contributors | Original work: hand-written Lottie test fixture (precomp, track matte, parented text) | MIT OR Apache-2.0 |
@@ -112,4 +112,4 @@ under [`docs/brand/LICENSE-brand.txt`](docs/brand/LICENSE-brand.txt). Forks and 
 |---|---|---|---|
 
 - Appearance theme previews, drawn procedurally from original shapes: `crates/ui-egui/src/panels/settings.rs` (original work, MIT OR Apache-2.0).
-| `docs/shibshib/effectat.svg` | Hamza Abu Ayyash (ShibShib) | Original work: ShibShib effectat logo | ShibShib logo (not covered by the code licence) |
+| `docs/studio/effectat.svg` | Hamza Abu Ayyash (Creative Studio) | Original work: effectat logo | Creative Studio logo (not covered by the code licence) |

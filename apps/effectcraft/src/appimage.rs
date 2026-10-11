@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 pub const APP_ID: &str = "ai.storyteller.effectcraft";
 
 /// Marks entries this module wrote (it never touches others).
-const MARKER: &str = "X-ShibShib effectat-AppImage=true";
+const MARKER: &str = "X-effectat-AppImage=true";
 
 /// A path as one `Exec` argument (desktop entry spec: quoted, with `"`, `` ` ``, `$` and `\`
 /// escaped; `%` doubled so it isn't a field code).
@@ -40,7 +40,7 @@ pub fn exec_arg(path: &str) -> String {
 /// The hidden desktop entry for the AppImage at `appimage`.
 pub fn entry(appimage: &str) -> String {
     format!(
-        "[Desktop Entry]\nType=Application\nName=ShibShib effectat\nComment=Motion graphics and visual effects compositor\nExec={} %F\nIcon={APP_ID}\nTerminal=false\nStartupWMClass={APP_ID}\nNoDisplay=true\n{MARKER}\n",
+        "[Desktop Entry]\nType=Application\nName=effectat\nComment=Motion graphics and visual effects compositor\nExec={} %F\nIcon={APP_ID}\nTerminal=false\nStartupWMClass={APP_ID}\nNoDisplay=true\n{MARKER}\n",
         exec_arg(appimage)
     )
 }
@@ -96,10 +96,10 @@ mod tests {
 
     #[test]
     fn exec_arguments_are_quoted_and_escaped() {
-        assert_eq!(exec_arg("/home/a/ShibShib effectat.AppImage"), "\"/home/a/ShibShib effectat.AppImage\"");
+        assert_eq!(exec_arg("/home/a/effectat.AppImage"), "\"/home/a/effectat.AppImage\"");
         assert_eq!(exec_arg("/a b/$x\"y`z\\w%"), "\"/a b/\\\\$x\\\\\"y\\\\`z\\\\\\\\w%%\"");
-        let e = entry("/opt/ShibShib effectat.AppImage");
-        assert!(e.contains("Exec=\"/opt/ShibShib effectat.AppImage\" %F\n") && e.contains("NoDisplay=true\n") && e.contains("Icon=ai.storyteller.effectcraft\n"));
+        let e = entry("/opt/effectat.AppImage");
+        assert!(e.contains("Exec=\"/opt/effectat.AppImage\" %F\n") && e.contains("NoDisplay=true\n") && e.contains("Icon=ai.storyteller.effectcraft\n"));
     }
 
     #[test]
@@ -110,22 +110,22 @@ mod tests {
         let entry_path = home.join("applications/ai.storyteller.effectcraft.desktop");
         let icon_path = home.join("icons/hicolor/256x256/apps/ai.storyteller.effectcraft.png");
         // First start: entry and icon written; again: nothing to do.
-        assert!(integrate("/a/ShibShib effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
+        assert!(integrate("/a/effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
         assert_eq!(std::fs::read(&icon_path).unwrap(), b"png");
-        assert!(std::fs::read_to_string(&entry_path).unwrap().contains("Exec=\"/a/ShibShib effectat.AppImage\""));
-        assert!(!integrate("/a/ShibShib effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
+        assert!(std::fs::read_to_string(&entry_path).unwrap().contains("Exec=\"/a/effectat.AppImage\""));
+        assert!(!integrate("/a/effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
         // The AppImage moved: the entry follows it.
-        assert!(integrate("/b/ShibShib effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
-        assert!(std::fs::read_to_string(&entry_path).unwrap().contains("Exec=\"/b/ShibShib effectat.AppImage\""));
+        assert!(integrate("/b/effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
+        assert!(std::fs::read_to_string(&entry_path).unwrap().contains("Exec=\"/b/effectat.AppImage\""));
         // The user's own entry is never replaced.
         std::fs::write(&entry_path, "[Desktop Entry]\nName=Mine\n").unwrap();
-        assert!(!integrate("/c/ShibShib effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
+        assert!(!integrate("/c/effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
         assert_eq!(std::fs::read_to_string(&entry_path).unwrap(), "[Desktop Entry]\nName=Mine\n");
         // An installed package provides the entry: nothing is written.
         let _ = std::fs::remove_dir_all(&home);
         std::fs::create_dir_all(system.join("applications")).unwrap();
         std::fs::write(system.join("applications/ai.storyteller.effectcraft.desktop"), "x").unwrap();
-        assert!(!integrate("/a/ShibShib effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
+        assert!(!integrate("/a/effectat.AppImage", &home, std::slice::from_ref(&system), b"png").unwrap());
         assert!(!entry_path.exists());
         let _ = std::fs::remove_dir_all(&root);
     }

@@ -14,7 +14,7 @@
 //!   @effects                                  the effect categories (Effect menu)
 //!   @dynamic:history                          entries computed from the session when the menu
 //!                                             opens ([`dynamic`]: recent files, undo history…)
-//! [mac] Quit ShibShib effectat | app.quit           only on macOS ([!mac] = everywhere else)
+//! [mac] Quit effectat | app.quit           only on macOS ([!mac] = everywhere else)
 //! ```
 //!
 //! An entry's shortcut is the command's default shortcut unless the line gives one (needed for
@@ -472,8 +472,8 @@ fn effect_categories() -> Vec<MenuNode> {
 
 /// The After Effects menu layout. Labels use "..." like AE's macOS menus.
 pub const TREE: &str = r#"
-[mac] ShibShib effectat
-  About ShibShib effectat... | app.about
+[mac] effectat
+  About effectat... | app.about
   ---
   Settings...
     General... | app.settings {"page":"general"} | Cmd+Alt+;
@@ -494,11 +494,11 @@ pub const TREE: &str = r#"
     3D... | app.settings {"page":"3d"}
     Scripting & Expressions... | app.settings {"page":"scripting"}
   ---
-  Hide ShibShib effectat | app.hide
+  Hide effectat | app.hide
   Hide Others | app.hideOthers
   Show All | app.showAll
   ---
-  Quit ShibShib effectat | app.quit
+  Quit effectat | app.quit
 File
   New
     New Project | file.newProject
@@ -1204,7 +1204,7 @@ Window
   VR Comp Editor | window.panel {"panel":"vrCompEditor"}
   @dynamic:scriptPanels
 Help
-  ShibShib effectat Help... | help.docs {"page":"help"} | F1
+  effectat Help... | help.docs {"page":"help"} | F1
   Scripting Help... | help.docs {"page":"scripting"}
   Expression Reference... | help.docs {"page":"expressions"}
   Effect Reference... | help.docs {"page":"effects"}
@@ -1221,12 +1221,12 @@ Help
   Upstream Community on Discord... | help.discord
   Provide Feedback... | help.reportIssue
   ---
-  ShibShib Project | help.website
-  ShibShib Website | help.appPage
-  ShibShib effectat on GitHub | help.github
+  Creative Studio Project | help.website
+  Creative Studio Website | help.appPage
+  effectat on GitHub | help.github
   Open Demo Project | file.openDemoProject
   [!mac] ---
-  [!mac] About ShibShib effectat... | app.about
+  [!mac] About effectat... | app.about
 "#;
 
 #[cfg(test)]

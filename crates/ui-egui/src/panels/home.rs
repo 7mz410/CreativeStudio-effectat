@@ -115,7 +115,7 @@ pub fn format_size(bytes: u64) -> String {
 /// The Kind column: what a recent file is, by its extension.
 fn kind_of(path: &str) -> &'static str {
     match std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref() {
-        Some("ecproj") => "ShibShib effectat project",
+        Some("ecproj") => "effectat project",
         Some("aep" | "aepx") => "After Effects project",
         Some("json" | "lottie") => "Lottie animation",
         _ => "Project",
@@ -273,8 +273,8 @@ fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail:
     let links = [
         (Icon::Chat, "Upstream Community on Discord", "help.discord"),
         (Icon::Globe, "getartcraft.com", "help.website"),
-        (Icon::Globe, "ShibShib effectat home page", "help.appPage"),
-        (Icon::Code, "ShibShib effectat on GitHub", "help.github"),
+        (Icon::Globe, "effectat home page", "help.appPage"),
+        (Icon::Code, "effectat on GitHub", "help.github"),
     ];
     let sib = effectcraft_engine::links::SIBLINGS;
     let sib_rows = sib.len().div_ceil(2) as f32;
@@ -328,7 +328,7 @@ fn home_page(
     let t = app.tokens;
     let (x0, w) = (area.min.x, area.width());
     let mut y = area.min.y;
-    p.text(pos2(x0, y + 14.0), Align2::LEFT_CENTER, crate::i18n::tr("Welcome to ShibShib effectat"), Tokens::semibold(26.0), t.tab_text_active);
+    p.text(pos2(x0, y + 14.0), Align2::LEFT_CENTER, crate::i18n::tr("Welcome to effectat"), Tokens::semibold(26.0), t.tab_text_active);
     y += 40.0;
     p.text(
         pos2(x0, y + 8.0),
@@ -531,7 +531,7 @@ mod tests {
         assert_eq!(format_ago(now, now - 30 * 86_400), "2026-08-22");
         assert_eq!(format_ago(now, now + 100), "Just now");
         assert_eq!((format_size(900), format_size(13_000), format_size(3_500_000)), ("900 B".into(), "13 KB".into(), "3.3 MB".into()));
-        assert_eq!((kind_of("/a/B.ecproj"), kind_of("c.AEP"), kind_of("x")), ("ShibShib effectat project", "After Effects project", "Project"));
+        assert_eq!((kind_of("/a/B.ecproj"), kind_of("c.AEP"), kind_of("x")), ("effectat project", "After Effects project", "Project"));
     }
 
     #[test]

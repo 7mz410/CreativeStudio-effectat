@@ -15,7 +15,7 @@ macro_rules! fe {
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         // Application.
-        fe!("app.about", "About ShibShib effectat...", [], None, "{}", always),
+        fe!("app.about", "About effectat...", [], None, "{}", always),
         fe!("layer.style.options", "Layer Style Options...", ["Layer", "Layer Styles"], None, "{layer?, style?: blendingOptions|dropShadow|…}", has_layers),
         fe!(
             "app.settings",
@@ -26,11 +26,11 @@ pub fn specs() -> Vec<CommandSpec> {
             always
         ),
         fe!("app.gpuInfo", "GPU Information...", [], None, "{}", always),
-        fe!("app.hide", "Hide ShibShib effectat", [], None, "{}", always),
+        fe!("app.hide", "Hide effectat", [], None, "{}", always),
         // macOS: the native menu's Hide Others / Show All (the desktop app hides the other apps).
         fe!("app.hideOthers", "Hide Others", [], None, "{}", always),
         fe!("app.showAll", "Show All", [], None, "{}", always),
-        fe!("app.quit", "Quit ShibShib effectat", [], Some("Cmd+Q"), "{}", always),
+        fe!("app.quit", "Quit effectat", [], Some("Cmd+Q"), "{}", always),
         fe!("app.commandPalette", "Quick Apply...", ["Edit"], Some("Cmd+Shift+Space"), "{query?}", always),
         fe!("app.keyboardShortcuts", "Keyboard Shortcuts", ["Edit"], Some("Cmd+Alt+'"), "{}", always),
         fe!("app.templates", "Templates", [], None, "{kind: renderSettings|outputModule}", always),

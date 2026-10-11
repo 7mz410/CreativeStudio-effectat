@@ -104,7 +104,7 @@ fn main() -> eframe::Result {
     let notice = launch.notice.take();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("ShibShib effectat")
+            .with_title("effectat")
             .with_inner_size([1680.0, 1020.0])
             .with_min_inner_size([960.0, 600.0])
             .with_drag_and_drop(true)
@@ -127,7 +127,7 @@ fn main() -> eframe::Result {
     #[cfg(target_os = "macos")]
     let apple_events = &apple_events;
     let result = eframe::run_native(
-        "ShibShib effectat",
+        "effectat",
         options,
         Box::new(move |cc| {
             match &cc.wgpu_render_state {
@@ -205,10 +205,10 @@ fn main() -> eframe::Result {
                 rfd::FileDialog::new().add_filter("Media", exts).pick_files().unwrap_or_default().into_iter().map(|p| p.to_string_lossy().to_string()).collect()
             }));
             app.hooks.pick_save = Some(Box::new(|name: &str| {
-                rfd::FileDialog::new().add_filter("ShibShib effectat Project", &["ecproj"]).set_file_name(name).save_file().map(|p| p.to_string_lossy().to_string())
+                rfd::FileDialog::new().add_filter("effectat Project", &["ecproj"]).set_file_name(name).save_file().map(|p| p.to_string_lossy().to_string())
             }));
             app.hooks.pick_open_project = Some(Box::new(|| {
-                rfd::FileDialog::new().add_filter("ShibShib effectat Project", &["ecproj", "ecprojx"]).pick_file().map(|p| p.to_string_lossy().to_string())
+                rfd::FileDialog::new().add_filter("effectat Project", &["ecproj", "ecprojx"]).pick_file().map(|p| p.to_string_lossy().to_string())
             }));
             app.hooks.system_theme = appearance::service();
             app.hooks.audio_device = Some(Box::new(audio_out::open));
@@ -271,7 +271,7 @@ fn wgpu_options(backends: Option<eframe::wgpu::Backends>) -> eframe::WgpuConfigu
             setup.instance_descriptor.backends = b;
         }
         setup.device_descriptor = std::sync::Arc::new(|adapter| eframe::wgpu::DeviceDescriptor {
-            label: Some("ShibShib effectat device"),
+            label: Some("effectat device"),
             required_limits: device_limits(adapter.limits()),
             ..Default::default()
         });
@@ -291,13 +291,13 @@ fn device_limits(adapter: eframe::wgpu::Limits) -> eframe::wgpu::Limits {
 fn startup_failed(e: &eframe::Error, gl_next: bool) {
     let next = if gl_next { "The next launch will try OpenGL instead. " } else { "" };
     let message = format!(
-        "ShibShib effectat couldn't start its window: {e}\n\n{next}Updating the graphics driver often helps. If it keeps happening, please report it at https://github.com/storytold/effectcraft/issues with this message."
+        "effectat couldn't start its window: {e}\n\n{next}Updating the graphics driver often helps. If it keeps happening, please report it at https://github.com/storytold/effectcraft/issues with this message."
     );
     log::error!("{message}");
     eprintln!("effectcraft: {message}");
     let _ = rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
-        .set_title("ShibShib effectat")
+        .set_title("effectat")
         .set_description(message)
         .set_buttons(rfd::MessageButtons::Ok)
         .show();
@@ -369,7 +369,7 @@ fn disable_app_nap() {
     {
         use objc2_foundation::{NSActivityOptions, NSProcessInfo, NSString};
         let info = NSProcessInfo::processInfo();
-        let reason = NSString::from_str("ShibShib effectat control channel");
+        let reason = NSString::from_str("effectat control channel");
         let opts = NSActivityOptions::UserInitiatedAllowingIdleSystemSleep | NSActivityOptions::LatencyCritical;
         // Leaked on purpose: the activity lasts for the life of the process.
         std::mem::forget(info.beginActivityWithOptions_reason(opts, &reason));

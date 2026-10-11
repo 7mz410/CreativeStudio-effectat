@@ -1,8 +1,8 @@
 asset:        ai.storyteller.effectcraft.png
-title:        ShibShib effectat app icon
-author:       Hamza Abu Ayyash (ShibShib)
-source:       original work (the effectat tile, ~/Documents/ShibShib/file icons/effectat.svg, clipped to the rounded app tile)
+title:        effectat app icon
+author:       Hamza Abu Ayyash (Creative Studio)
+source:       original work (the effectat tile, ~/Documents/CreativeStudio/file icons/effectat.svg, clipped to the rounded app tile)
 license:      MIT OR Apache-2.0
 license-file: assets/app-icon/LICENSE.txt
-added:        2026-10-10 for the ShibShib project
+added:        2026-10-10 for the Creative Studio project
 notes:        Rendered from assets/app-icon/effectcraft.svg by packaging/icons.sh. Replaces upstream EffectCraft's icon.

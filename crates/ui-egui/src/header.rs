@@ -27,8 +27,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let brand = Rect::from_min_size(pos2(x, cy - 12.0), vec2(24.0, 24.0));
     paint_logo(&p, brand);
     let bresp = ui.interact(brand, egui::Id::new("brand"), Sense::click());
-    app.auto.add("header.about", brand, "About ShibShib effectat");
-    if bresp.on_hover_text(tr("About ShibShib effectat")).clicked() {
+    app.auto.add("header.about", brand, "About effectat");
+    if bresp.on_hover_text(tr("About effectat")).clicked() {
         app.dialog = Some(Dialog::About);
     }
     x += 32.0;
@@ -177,7 +177,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
     // Right side: community buttons, workspaces.
     let mut rx = rect.max.x - 10.0;
-    // ShibShib: no community Discord button yet (an empty slot keeps the layout code as is).
+    // Creative Studio: no community Discord button yet (an empty slot keeps the layout code as is).
     let discord = Rect::from_min_max(pos2(rx, cy - 13.0), pos2(rx, cy + 13.0));
     let dresp = ui.interact(discord, egui::Id::new("hdr-discord"), Sense::click());
     app.auto.add("header.discord", discord, "Upstream Community on Discord");
@@ -186,7 +186,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
     rx = discord.min.x - 6.0;
     for (id, icon, tip, cmd) in
-        [("hdr-github", Icon::Code, "ShibShib effectat on GitHub", "help.github"), ("hdr-web", Icon::Globe, "ShibShib Website", "help.appPage")]
+        [("hdr-github", Icon::Code, "effectat on GitHub", "help.github"), ("hdr-web", Icon::Globe, "Creative Studio Website", "help.appPage")]
     {
         let r = Rect::from_min_max(pos2(rx - 26.0, cy - 13.0), pos2(rx, cy + 13.0));
         if widgets::icon_button(ui, r, icon, false, &t, egui::Id::new(id)).on_hover_text(tip).clicked() {

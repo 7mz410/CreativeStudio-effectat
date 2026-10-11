@@ -7,13 +7,13 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>ShibShib effectat</string>
+  <string>effectat</string>
   <key>CFBundleName</key>
-  <string>ShibShib effectat</string>
+  <string>effectat</string>
   <key>CFBundleExecutable</key>
   <string>EffectCraft</string>
   <key>CFBundleIdentifier</key>
-  <string>com.shibshib.effectat</string>
+  <string>ps.creative.studio.effectat</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>
