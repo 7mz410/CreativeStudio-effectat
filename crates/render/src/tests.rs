@@ -268,6 +268,23 @@ fn render_cached(p: &Project, cid: ItemId, t: Tick, cache: Option<&crate::LayerC
     r.comp_frame(cid, t)
 }
 
+/// #329: a render whose footage reads were called off keeps nothing in the layer cache: a layer
+/// made from a frame that came back empty (an effect's layer parameter) would be reused by the
+/// next render of that time.
+#[test]
+fn a_called_off_render_keeps_nothing_in_the_layer_cache() {
+    let (p, cid) = cache_scene();
+    let t = Tick::from_seconds_f64(0.5);
+    let cache = crate::LayerCache::default();
+    let off = crate::CancellableFootage { inner: &crate::NoFootage, cancel: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true)) };
+    let mut r = crate::Renderer::new(&p, &off, crate::RenderOpts::default());
+    r.cache = Some(&cache);
+    r.comp_frame(cid, t);
+    assert_eq!(cache.stats().entries, 0, "a called-off render kept layers");
+    render_cached(&p, cid, t, Some(&cache));
+    assert!(cache.stats().entries > 0, "a render that runs to the end keeps its layers");
+}
+
 /// [`add_effect`] for a 200×100 layer.
 fn add_effect_200(p: &mut Project, l: &mut effectcraft_project::Layer, id: &str, vals: &[(&str, Value)]) {
     add_effect(p, l, id, [200.0, 100.0], vals);
@@ -807,4 +824,27 @@ fn precomp_dependencies_hash_nested_sources_and_evaluated_animation() {
     let fresh = render_cached(&p, cid, Tick::ZERO, None);
     assert_same(&render_cached(&p, cid, Tick::ZERO, Some(&cache)), &fresh, "precomp source edit");
     assert_ne!(before.get(50, 50), fresh.get(50, 50));
+}
+
+/// #352: a shape layer's bounds (snapping, Align) are its visual edges: a 100×100 rectangle is
+/// exactly ±50, and a 10 px stroke adds half its width, with no anti-aliasing padding.
+#[test]
+fn shape_content_bounds_are_the_visual_edges() {
+    for (stroke, half) in [(None, 50.0), (Some(10.0), 55.0)] {
+        let (mut p, cid, comp) = setup();
+        let mut l = build::layer(&mut p, &comp, "Shape Layer 1", LayerSource::Shape, (200, 100), None);
+        let mut next = p.next_id;
+        let mut ids = Ids(&mut next);
+        let mut items = vec![build::shape_rect(&mut ids, [100.0, 100.0], [0.0, 0.0], 0.0), build::shape_fill(&mut ids, [1.0, 0.0, 0.0, 1.0])];
+        if let Some(w) = stroke {
+            items.push(build::shape_stroke(&mut ids, [1.0, 1.0, 1.0, 1.0], w));
+        }
+        let g = build::shape_group(&mut ids, "Rectangle 1", items);
+        p.next_id = next;
+        l.props.sub_mut("contents").unwrap().children.push(g.into());
+        p.comp_mut(cid).unwrap().layers.push(l.clone());
+        let ctx = crate::EvalCtx::new(&p, cid, p.comp(cid).unwrap(), Tick::ZERO);
+        let b = crate::content_bounds(&ctx, &l).unwrap();
+        assert!(b.iter().zip([-half, -half, half, half]).all(|(a, e)| (a - e).abs() < 1e-6), "{stroke:?}: {b:?}");
+    }
 }

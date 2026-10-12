@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use effectcraft_color::Label;
-use effectcraft_project::{AlphaMode, Comp, Footage, FootageKind, ItemId, ItemKind, LayerSource, Project, Solid};
+use effectcraft_project::{AlphaMode, Comp, Footage, FootageKind, ItemId, ItemKind, LayerSource, Project, Solid, limits};
 use effectcraft_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
@@ -84,12 +84,12 @@ fn save_copy(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 fn rate_of(p: &Value) -> FrameRate {
-    f_p(p, "frameRate").map(FrameRate::from_f64).unwrap_or(FrameRate::FPS_29_97)
+    f_p(p, "frameRate").map(|f| limits::frame_rate(FrameRate::from_f64(f), FrameRate::FPS_29_97)).unwrap_or(FrameRate::FPS_29_97)
 }
 
 fn placeholder_footage(p: &Value) -> Footage {
-    let w = p.get("width").and_then(Value::as_u64).unwrap_or(1920) as u32;
-    let h = p.get("height").and_then(Value::as_u64).unwrap_or(1080) as u32;
+    let w = p.get("width").and_then(Value::as_u64).map_or(1920, limits::size);
+    let h = p.get("height").and_then(Value::as_u64).map_or(1080, limits::size);
     Footage {
         path: String::new(),
         kind: FootageKind::Video,
@@ -133,8 +133,8 @@ fn solid_from(p: &Value, s: &Session) -> Solid {
     .unwrap_or([0.5, 0.5, 0.5]);
     Solid {
         color,
-        width: p.get("width").and_then(Value::as_u64).map(|v| v as u32).unwrap_or(cw).max(1),
-        height: p.get("height").and_then(Value::as_u64).map(|v| v as u32).unwrap_or(ch).max(1),
+        width: p.get("width").and_then(Value::as_u64).map(limits::size).unwrap_or(cw).max(1),
+        height: p.get("height").and_then(Value::as_u64).map(limits::size).unwrap_or(ch).max(1),
         pixel_aspect: 1.0,
     }
 }
@@ -465,6 +465,8 @@ fn run_script(s: &mut Session, p: &Value) -> Result<Value> {
         }
         _ => return Err(bad("file.runScript", "missing `path` (or inline `steps`)")),
     };
+    // A command script read from a file is a script: it can't change what scripts may do.
+    let from_file = p.get("steps").is_none();
     let mut results = vec![];
     for (i, step) in steps.iter().enumerate() {
         let (id, params) = match (step.get("command").or(step.get("id")).and_then(Value::as_str), step.get("method").and_then(Value::as_str)) {
@@ -478,7 +480,8 @@ fn run_script(s: &mut Session, p: &Value) -> Result<Value> {
         if id == "file.runScript" || id == "script.run" {
             return Err(bad("file.runScript", "scripts can't run scripts"));
         }
-        let r = s.execute(&id, params).map_err(|e| EngineError::Other(format!("step {} ({id}): {e}", i + 1)))?;
+        let r = if from_file { s.execute_for_script(&id, params) } else { s.execute(&id, params) };
+        let r = r.map_err(|e| EngineError::Other(format!("step {} ({id}): {e}", i + 1)))?;
         results.push(r);
     }
     Ok(json!({"steps": results.len(), "results": results}))

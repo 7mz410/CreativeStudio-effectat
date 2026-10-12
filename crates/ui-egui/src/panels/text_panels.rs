@@ -198,7 +198,7 @@ pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         app.auto.add(&format!("character.{key}"), fs, label);
         let mut rgb = [c[0], c[1], c[2]];
-        if crate::header::color_popup(ui, pop, fs.left_bottom(), &mut rgb) {
+        if crate::widgets::color_popup(ui, pop, fs.left_bottom(), &mut rgb) {
             actions.push(json!({key: [rgb[0], rgb[1], rgb[2]], "merge": format!("char-{key}")}));
         }
         p.text(pos2(fs.max.x + 6.0, y + 10.0), Align2::LEFT_CENTER, label, Tokens::ui(11.5), t.text_dim);
@@ -579,6 +579,10 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
     });
     let preview = app.session.prefs.type_.font_preview;
     let t = app.tokens;
+    // The Variable Fonts filter (After Effects 26.3) stays as set while the app runs, like the
+    // menu's other settings; the search query resets on every open.
+    let variable_id = id.with("variable-only");
+    let mut only_variable = ui.data(|d| d.get_temp::<bool>(variable_id)).unwrap_or(false);
     // The font field itself becomes editable. The popup contains only results.
     let arrow = Rect::from_min_max(pos2(rect.max.x - 22.0, rect.min.y), rect.max);
     let edit_rect = Rect::from_min_max(rect.min, pos2(arrow.min.x, rect.max.y));
@@ -608,12 +612,28 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
     let area = egui::Area::new(id.with("area")).order(egui::Order::Foreground).pivot(pivot).fixed_pos(anchor).show(ui.ctx(), |ui| {
         egui::Frame::popup(ui.style()).show(ui, |ui| {
             ui.set_width(rect.width().max(180.0));
+            // Filter row: a checkbox that keeps only the variable fonts.
+            let filter_h = 22.0;
+            let row = ui.add_sized([ui.available_width(), filter_h], egui::Button::selectable(false, ""));
+            let box_rect = Rect::from_min_size(row.rect.min, vec2(18.0, filter_h));
+            let label_rect = Rect::from_min_max(pos2(box_rect.max.x + 2.0, row.rect.min.y), row.rect.max);
+            let boxed = widgets::checkbox(ui, box_rect, only_variable, &t, id.with("variable-check"));
+            ui.painter().text(label_rect.left_center(), Align2::LEFT_CENTER, tr("Variable fonts only"), Tokens::ui(11.5), t.text);
+            app.auto.add(&format!("{auto}.variable"), row.rect, "Variable fonts only");
+            let toggled = row.clicked() || boxed.clicked();
+            if toggled {
+                only_variable = !only_variable;
+                ui.data_mut(|d| d.insert_temp(variable_id, only_variable));
+                // Typing goes on into the search field.
+                ui.memory_mut(|m| m.request_focus(search_id));
+            }
             let query = state.query.trim().to_lowercase();
             let mut seen = std::collections::HashSet::new();
             let filtered: Vec<_> = rows
                 .iter()
                 .filter(|r| {
                     !r.family.is_empty()
+                        && (!only_variable || r.variable)
                         && (query.is_empty()
                             || ((r.family.to_lowercase().contains(&query) || r.display.to_lowercase().contains(&query)) && seen.insert(&r.family)))
                 })
@@ -621,7 +641,7 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
             if fresh {
                 state.selected = filtered.iter().position(|r| r.family == current).unwrap_or(0);
             }
-            if search.changed() {
+            if search.changed() || toggled {
                 state.selected = 0;
             }
             let last = filtered.len().saturating_sub(1);
@@ -637,10 +657,12 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
             }
             // Give the result list its actual height even when the previous query had
             // only one row. A cached tiny Area must not collapse a reopened long list.
-            let height = (filtered.len() as f32 * (24.0 + ui.spacing().item_spacing.y) + 16.0).clamp(28.0, max_height);
-            ui.set_height(height);
+            let filter_room = filter_h + ui.spacing().item_spacing.y;
+            let height = (filtered.len() as f32 * (24.0 + ui.spacing().item_spacing.y) + 16.0).clamp(28.0, (max_height - filter_room).max(28.0));
+            // A minimum, from below the filter row (a maximum would move the cursor back up).
+            ui.set_min_height(height);
             let mut scroll = egui::ScrollArea::vertical().id_salt(id.with("results")).max_height(height).min_scrolled_height(height);
-            if search.changed() {
+            if search.changed() || toggled {
                 scroll = scroll.vertical_scroll_offset(0.0);
             }
             scroll.show(ui, |ui| {
@@ -682,10 +704,15 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
                                 l
                             }
                         };
-                        let o = pos2(resp.rect.max.x - 90.0, resp.rect.center().y + 5.0);
-                        for poly in lines.iter() {
-                            let pts: Vec<egui::Pos2> = poly.iter().map(|p| o + vec2(p[0], p[1])).collect();
-                            ui.painter().add(egui::Shape::line(pts, egui::Stroke::new(1.0, t.text_dim)));
+                        // Scaled and placed to fit the row's preview column, and clipped to the row (#577).
+                        let room = Rect::from_min_max(pos2(resp.rect.max.x - 95.0, resp.rect.min.y + 1.0), pos2(resp.rect.max.x - 6.0, resp.rect.max.y - 1.0));
+                        if let Some((k, o)) = fit_preview(&lines, room, resp.rect.center().y + 5.0) {
+                            let painter = ui.painter().with_clip_rect(resp.rect.intersect(ui.clip_rect()));
+                            for poly in lines.iter() {
+                                let pts: Vec<egui::Pos2> =
+                                    poly.iter().filter(|p| p[0].is_finite() && p[1].is_finite()).map(|p| (o + vec2(p[0], p[1]) * k).to_pos2()).collect();
+                                painter.add(egui::Shape::line(pts, egui::Stroke::new(1.0, t.text_dim)));
+                            }
                         }
                     }
                     if resp.clicked() {
@@ -835,5 +862,65 @@ fn align_glyph(p: &egui::Painter, r: Rect, op: &str, distribute: bool, t: &Token
         };
         p.rect_filled(Rect::from_min_size(pos2(c.x - 8.0, off(14.0)), vec2(5.0, 14.0)), 1.0, t.text_dim);
         p.rect_filled(Rect::from_min_size(pos2(c.x + 3.0, off(9.0)), vec2(5.0, 9.0)), 1.0, t.text_dim);
+    }
+}
+
+/// Where a font's "Sample" outlines (`lines`, baseline at y = 0) go in `room`: `(scale, origin)`,
+/// a point `p` landing at `origin + p * scale`. At their natural size on `baseline` when they fit;
+/// fonts with large or odd metrics are scaled down (never up) and moved inside, so no preview
+/// spills out of its row (#577). `None`: nothing to draw.
+fn fit_preview(lines: &[Vec<[f32; 2]>], room: Rect, baseline: f32) -> Option<(f32, egui::Vec2)> {
+    let b = lines
+        .iter()
+        .flatten()
+        .filter(|p| p[0].is_finite() && p[1].is_finite())
+        .fold(Rect::NOTHING, |b, p| b.union(Rect::from_min_max(pos2(p[0], p[1]), pos2(p[0], p[1]))));
+    if !(b.min.x <= b.max.x && b.min.y <= b.max.y && room.is_positive()) {
+        return None;
+    }
+    let k = (room.width() / b.width().max(1e-3)).min(room.height() / b.height().max(1e-3)).min(1.0);
+    let mut o = vec2(room.min.x - b.min.x * k, baseline);
+    let (top, bottom) = (o.y + b.min.y * k, o.y + b.max.y * k);
+    if top < room.min.y {
+        o.y += room.min.y - top;
+    } else if bottom > room.max.y {
+        o.y -= bottom - room.max.y;
+    }
+    Some((k, o))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// #577: every font's "Sample" preview lands inside its row's preview box: at its natural size
+    /// when it fits, else scaled down; nothing for no outlines.
+    #[test]
+    fn font_previews_fit_their_row() {
+        let room = Rect::from_min_max(pos2(180.0, 101.0), pos2(294.0, 119.0));
+        let baseline = 115.0;
+        let inside = |lines: &[Vec<[f32; 2]>]| {
+            let (k, o) = fit_preview(lines, room, baseline).expect("a preview");
+            for p in lines.iter().flatten() {
+                let q = o + vec2(p[0], p[1]) * k;
+                assert!(room.expand(0.01).contains(pos2(q.x, q.y)), "{p:?} → {q:?} outside {room:?}");
+            }
+            k
+        };
+        // A plain 14 px sample fits as it is, on the baseline.
+        let plain = vec![vec![[0.0, -10.0], [60.0, -10.0], [60.0, 3.0], [0.0, 3.0]]];
+        assert_eq!(inside(&plain), 1.0);
+        assert_eq!(fit_preview(&plain, room, baseline).map(|(_, o)| o.y), Some(baseline));
+        // Huge, wide, tall, offset and negative-bearing outlines are scaled into the box.
+        for lines in [
+            vec![vec![[0.0, -80.0], [400.0, 30.0]]],
+            vec![vec![[-50.0, -5.0], [500.0, 2.0]]],
+            vec![vec![[10.0, -200.0], [12.0, 0.0]]],
+            vec![vec![[0.0, 20.0], [30.0, 40.0]]],
+        ] {
+            assert!(inside(&lines) <= 1.0);
+        }
+        assert!(fit_preview(&[], room, baseline).is_none());
+        assert!(fit_preview(&[vec![[f32::NAN, 1.0]]], room, baseline).is_none());
     }
 }

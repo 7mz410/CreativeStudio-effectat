@@ -21,6 +21,10 @@ mod control_server;
 mod launch_guard;
 #[cfg(target_os = "macos")]
 mod native_menu;
+// Built everywhere so it stays checked; only the macOS app uses it.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+mod sheet_dialogs;
+mod window;
 
 use effectcraft_ui_egui::EffectcraftApp;
 use serde_json::json;
@@ -105,8 +109,8 @@ fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("effectat")
-            .with_inner_size([1680.0, 1020.0])
-            .with_min_inner_size([960.0, 600.0])
+            .with_inner_size(window::DEFAULT_SIZE)
+            .with_min_inner_size(window::MIN_SIZE)
             .with_drag_and_drop(true)
             // Started for an agent (`--control`): open without taking the user's keyboard focus.
             .with_active(control_port.is_none())
@@ -167,6 +171,9 @@ fn main() -> eframe::Result {
                 session.config = Some(std::sync::Arc::new(effectcraft_engine::config::DirConfig::new(dir)));
             }
             session.load_settings();
+            // Fit the window to its monitor, or put it back where it was (still hidden).
+            let saved_window = session.config.as_deref().and_then(window::load);
+            let opened = cc.winit_window().map(|w| window::restore(w, saved_window));
             let recovery = if control_port.is_none() { session.begin_recovery() } else { None };
             let project = files.iter().find(|f| is_project_file(f)).cloned();
             if let Some(p) = project {
@@ -207,6 +214,22 @@ fn main() -> eframe::Result {
             app.hooks.pick_save = Some(Box::new(|name: &str| {
                 rfd::FileDialog::new().add_filter("effectat Project", &["ecproj"]).set_file_name(name).save_file().map(|p| p.to_string_lossy().to_string())
             }));
+            // The window closes after a lost graphics device (#591); say why, unless an agent drives
+            // the app through the control channel.
+            if control_port.is_none() {
+                app.hooks.device_lost = Some(Box::new(|saved: Option<Result<String, String>>| {
+                    let saved = match saved {
+                        Some(Ok(path)) => format!("\n\nYour unsaved changes were saved to:\n{path}\n\nReopen effectat to recover them."),
+                        Some(Err(e)) => format!("\n\nYour unsaved changes could not be saved ({e})."),
+                        None => String::new(),
+                    };
+                    rfd::MessageDialog::new()
+                        .set_level(rfd::MessageLevel::Error)
+                        .set_title("effectat: graphics device lost")
+                        .set_description(format!("The graphics driver stopped responding, so effectat has to close.{saved}"))
+                        .show();
+                }));
+            }
             app.hooks.pick_open_project = Some(Box::new(|| {
                 rfd::FileDialog::new().add_filter("effectat Project", &["ecproj", "ecprojx"]).pick_file().map(|p| p.to_string_lossy().to_string())
             }));
@@ -227,6 +250,9 @@ fn main() -> eframe::Result {
             }));
             #[cfg(target_os = "macos")]
             {
+                // The commands' file dialogs open as sheets instead of nested modal loops (#511).
+                let ctx = cc.egui_ctx.clone();
+                app.hooks.file_dialog_async = Some(Box::new(move |dialog, done| sheet_dialogs::show(dialog, done, ctx.clone())));
                 app.hooks.app_action = Some(Box::new(native_menu::app_action));
                 app.hooks.clipboard_text = Some(Box::new(native_menu::clipboard_text));
             }
@@ -242,6 +268,7 @@ fn main() -> eframe::Result {
                 #[cfg(target_os = "macos")]
                 apple_events: apple_events.connect(&cc.egui_ctx),
                 app,
+                window: window::Tracker::new(opened, saved_window, control_port.is_none()),
                 launch,
                 drawn: false,
             }))
@@ -311,6 +338,8 @@ struct Desktop {
     /// Documents opened from Finder, the Dock or `open` (macOS).
     #[cfg(target_os = "macos")]
     apple_events: apple_events::Opened,
+    /// The window's size and position, saved for the next launch.
+    window: window::Tracker,
     launch: launch_guard::Launch,
     /// The first frame was drawn (logged once).
     drawn: bool,
@@ -325,6 +354,7 @@ impl eframe::App for Desktop {
 
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.app.ui(ui, frame);
+        self.window.frame(ui.ctx(), self.app.session.config.as_deref());
         if !self.drawn {
             self.drawn = true;
             log::info!("first frame drawn");
@@ -338,6 +368,7 @@ impl eframe::App for Desktop {
 
     fn on_exit(&mut self) {
         self.launch.exited();
+        self.window.save(self.app.session.config.as_deref());
         self.app.on_exit();
     }
 

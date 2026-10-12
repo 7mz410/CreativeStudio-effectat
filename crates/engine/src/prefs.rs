@@ -34,9 +34,6 @@ pub const LANGUAGES: &[(&str, &str)] = &[
     ("Português (Brasil)", "pt-br"),
 ];
 
-/// Settings ▸ Appearance ▸ UI Scale: (label, `appearance.uiScale` percent).
-pub const UI_SCALES: &[(&str, &str)] = &[("75%", "75"), ("100%", "100"), ("125%", "125"), ("150%", "150"), ("175%", "175"), ("200%", "200")];
-
 /// Settings ▸ Startup & Repair ▸ Window Graphics: (label, `startup.windowGraphics` value).
 pub const WINDOW_GRAPHICS: &[(&str, &str)] = &[("Automatic", "auto"), ("OpenGL (compatibility)", "gl")];
 
@@ -175,6 +172,8 @@ page!(Appearance {
     dark_theme: String = "dark".into(),
     /// The theme used in light appearance: `light`.
     light_theme: String = "light".into(),
+    /// Theme shortcuts in the appearance context menu.
+    favorite_themes: Vec<String> = Vec::new(),
     /// User interface brightness, -1 (darker) … 1 (lighter).
     brightness: f64 = 0.0,
     /// The size of the whole interface in percent (75–200), on top of the display's own scale.
@@ -308,6 +307,25 @@ page!(Scripting {
     word_wrap: bool = false,
     error_banner: bool = true,
 });
+
+impl Scripting {
+    /// Whether `other` grants scripts the same as this: Application Scripting (file and network
+    /// access, the warning before executing files, the debugger). Scripts can't change these
+    /// ([`crate::Session::execute_for_script`]): a script could otherwise give itself the
+    /// access the user withheld.
+    pub fn same_permissions(&self, other: &Scripting) -> bool {
+        self.allow_scripts_write_files == other.allow_scripts_write_files
+            && self.warn_executing_files == other.warn_executing_files
+            && self.enable_js_debugger == other.enable_js_debugger
+    }
+
+    /// Take `from`'s Application Scripting settings (see [`Scripting::same_permissions`]).
+    pub fn keep_permissions(&mut self, from: &Scripting) {
+        self.allow_scripts_write_files = from.allow_scripts_write_files;
+        self.warn_executing_files = from.warn_executing_files;
+        self.enable_js_debugger = from.enable_js_debugger;
+    }
+}
 
 /// One editable label: name and `#rrggbb` colour.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -548,6 +566,8 @@ impl Prefs {
         a.interval_minutes = a.interval_minutes.clamp(1, 240);
         a.max_versions = a.max_versions.clamp(1, 99);
         let ap = &mut self.appearance;
+        let mut seen = std::collections::BTreeSet::new();
+        ap.favorite_themes.retain(|id| is_choice(THEMES, id) && seen.insert(id.clone()));
         if !is_choice(APPEARANCE_MODES, &ap.appearance_mode) {
             ap.appearance_mode = Appearance::default().appearance_mode;
         }
@@ -603,6 +623,23 @@ impl Prefs {
         {
             let all: Vec<&str> = c.iter().map(|(_, v)| *v).collect();
             return Err(format!("`{key}` expects one of {}", all.join(", ")));
+        }
+        let favorites = if key == "appearance.favoriteThemes" {
+            Some(&value)
+        } else if key == "appearance" {
+            value.get("favoriteThemes")
+        } else {
+            None
+        };
+        if let Some(favorites) = favorites {
+            let values = favorites.as_array().ok_or("favorite themes must be a list")?;
+            let mut seen = std::collections::BTreeSet::new();
+            for value in values {
+                let id = value.as_str().ok_or("favorite theme must be a string")?;
+                if !is_choice(THEMES, id) || !seen.insert(id) {
+                    return Err("unknown or duplicate favorite theme".into());
+                }
+            }
         }
         // Older clients set the single theme (by key, or inside the page object): it still picks
         // a visible theme, fixing the mode to its family.
@@ -1151,7 +1188,7 @@ pub fn pages() -> Vec<Page> {
                 s("appearance.lightTheme", "Light Theme", Kind::Choice(LIGHT_THEMES), true),
                 s("appearance.darkTheme", "Dark Theme", Kind::Choice(DARK_THEMES), true),
                 s("appearance.brightness", "Brightness", Kind::Slider(-1.0, 1.0), true),
-                s("appearance.uiScale", "UI Scale", Kind::Choice(UI_SCALES), true),
+                s("appearance.uiScale", "UI Scale", Kind::Int(75, 200, "%"), true),
                 Section("Labels and Colors"),
                 s("appearance.useLabelColorForHandles", "Use Label Color for Layer Handles and Paths", B, true),
                 s("appearance.useLabelColorForTabs", "Use Label Color for Related Tabs", B, true),

@@ -20,9 +20,20 @@ KEEP = ('the EffectCraft authors', 'EffectCraft Intro')
 
 # Exact replacements, applied before the general rename (and kept idempotent: skipped once done).
 RTL_RULES = [
+    # No community Discord button: an empty slot keeps the layout code as is (upstream #581 layout).
+    ('crates/ui-egui/src/header.rs', '    let discord = Rect::from_min_max(pos2(rx - (10.0 + 14.0 + 6.0 + label.size().x + 12.0), cy - 13.0), pos2(rx, cy + 13.0));',
+     '    // Creative Studio: no community Discord button yet.\n    let _ = label;\n    let discord = Rect::from_min_max(pos2(rx, cy - 13.0), pos2(rx, cy + 13.0));'),
+    ('crates/ui-egui/src/header.rs', """    let dc = Color32::from_rgb(0x58, 0x65, 0xf2);
+    p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });
+    icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 17.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);
+    p.galley(pos2(discord.min.x + 30.0, cy - label.size().y / 2.0), label, Color32::WHITE);
+""", ''),
+    ('crates/ui-egui/tests/ui_keyframes.rs', 'assert_eq!(copied, ["EffectCraft: 1 keyframe"]', 'assert_eq!(copied, ["effectat: 1 keyframe"]'),
+    ('crates/ui-egui/tests/ui_panels.rs', """    // Padding 10, the 14 px icon, a 6 px gap, the text, padding 12.
+    assert!((e.rect[2] - (text + 42.0)).abs() < 0.5, "{} for a {text} px label", e.rect[2]);""", """    // Creative Studio: no Discord pill; its slot is empty.
+    let _ = text;
+    assert!(e.rect[2].abs() < 0.5, "{} wide", e.rect[2]);"""),
     ('crates/ui-egui/src/header.rs', 'use crate::icons::{self, Icon};', 'use crate::icons::Icon;'),
-    ('crates/ui-egui/src/header.rs', '    let discord = Rect::from_min_max(pos2(rx - 104.0, cy - 13.0), pos2(rx, cy + 13.0));', '    // Creative Studio: no community Discord button yet (an empty slot keeps the layout code as is).\n    let discord = Rect::from_min_max(pos2(rx, cy - 13.0), pos2(rx, cy + 13.0));'),
-    ('crates/ui-egui/src/header.rs', '    let dc = Color32::from_rgb(0x58, 0x65, 0xf2);\n    p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });\n    icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 16.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);\n    p.text(pos2(discord.min.x + 28.0, cy), Align2::LEFT_CENTER, tr("Discord"), Tokens::semibold(12.0), Color32::WHITE);\n', ''),
     ('crates/engine/src/tests.rs', 'unwrap()["url"], "https://github.com/storytold/effectcraft");', 'unwrap()["url"], "https://github.com/7mz410/CreativeStudio-effectat");'),
     # Links (crates/engine/src/links.rs) and the ArtCraft mark (upstream's docs/brand/, removed).
     ('crates/engine/src/links.rs', 'pub const WEBSITE: &str = "https://getartcraft.com";', 'pub const WEBSITE: &str = "https://studio.creative.ps";'),
