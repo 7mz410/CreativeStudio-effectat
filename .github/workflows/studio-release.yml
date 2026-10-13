@@ -20,5 +20,5 @@ jobs:
       app: effectat
       package: effectcraft
       version_var: EFFECTCRAFT_VERSION
-      bundle: EffectCraft.app
+      bundle: effectat.app
       tag: ${{ github.ref_name }}
