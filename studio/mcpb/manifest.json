@@ -1,0 +1,30 @@
+{
+  "manifest_version": "0.2",
+  "name": "effectat",
+  "display_name": "effectat (تأثيرات)",
+  "version": "__VERSION__",
+  "description": "Animate posters and make motion graphics with Claude: keyframes, effects, and video export (MP4, WebM, GIF, ProRes).",
+  "long_description": "effectat is the motion graphics app of Creative Studio. This extension runs its engine headless so Claude can build compositions from your images and render videos into the folder you choose. It reads and writes only inside that folder.",
+  "author": { "name": "Hamza Abu Ayyash", "url": "https://studio.creative.ps" },
+  "homepage": "https://effectat.studio.creative.ps",
+  "repository": { "type": "git", "url": "https://github.com/7mz410/CreativeStudio-effectat" },
+  "license": "MIT OR Apache-2.0",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/__CLI__",
+    "mcp_config": {
+      "command": "${__dirname}/server/__CLI__",
+      "args": ["mcp", "--autosave", "--automation-write-root", "${user_config.folder}"]
+    }
+  },
+  "user_config": {
+    "folder": {
+      "type": "directory",
+      "title": "Work folder",
+      "description": "Put your poster here. Claude reads images from this folder and saves videos and projects into it.",
+      "required": true,
+      "default": "${HOME}/Desktop"
+    }
+  },
+  "compatibility": { "platforms": ["__PLATFORM__"] }
+}

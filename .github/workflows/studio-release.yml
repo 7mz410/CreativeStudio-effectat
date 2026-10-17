@@ -21,4 +21,5 @@ jobs:
       package: effectcraft
       version_var: EFFECTCRAFT_VERSION
       bundle: effectat.app
+      mcpb_cli: effectcraft-cli
       tag: ${{ github.ref_name }}
