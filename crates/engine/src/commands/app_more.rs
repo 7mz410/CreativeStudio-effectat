@@ -3,8 +3,10 @@
 //! (Create VR Environment, Extract Cubemap), the "Assign Shortcut to …" submenus, Help ▸ Enable
 //! Logging / Reveal Logging File / System Compatibility Report, and `File.execute()` for scripts.
 
+use effectcraft_color::Label;
 use effectcraft_geom::{Mat4, Vec3, vec3};
-use effectcraft_project::{ItemId, ItemKind, LayerSource};
+use effectcraft_project::{Comp, FootageKind, ItemId, ItemKind, LayerSource};
+use effectcraft_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, comp_id, has_comp, has_layers, has_project_selection, str_p};
@@ -170,6 +172,71 @@ fn replace_with_layered_comp(s: &mut Session, p: &Value) -> Result<Value> {
     })
 }
 
+/// File ▸ Replace Footage ▸ With Precomposition (also in the Project panel's context menu):
+/// the footage or solid item goes into a new composition of its size, pixel aspect and frame
+/// rate, placed in the same folder, and every layer in every composition that used the item now
+/// uses that composition instead. The layers keep their timing, transforms, effects and masks;
+/// the item stays in the project (the new composition uses it). The composition lasts as long as
+/// the footage, or as long as the longest layer that showed it for stills and solids. One undo
+/// step.
+fn replace_with_precomp(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "file.replaceWithPrecomp";
+    let item = p.get("item").and_then(Value::as_u64).map(ItemId).or_else(|| s.state.project_selection.first().copied());
+    let item = item.ok_or_else(|| bad(CMD, "select a footage or solid item"))?;
+    let it = s.project.item(item).ok_or_else(|| bad(CMD, "no such item"))?.clone();
+    let (w, h, pixel_aspect, rate, own) = match &it.kind {
+        ItemKind::Footage(f) if matches!(f.kind, FootageKind::Video | FootageKind::Still | FootageKind::Sequence) && f.has_video => {
+            (f.width, f.height, f.pixel_aspect, it.frame_rate(), it.duration())
+        }
+        ItemKind::Solid(so) => (so.width, so.height, so.pixel_aspect, None, None),
+        _ => return Err(bad(CMD, "the item is not visual footage or a solid")),
+    };
+    // Adjustment layers only borrow a solid for their size; they keep it.
+    let is_user = |l: &effectcraft_project::Layer| {
+        !l.switches.adjustment && matches!(l.source, LayerSource::Footage { item: i } | LayerSource::Solid { item: i } if i == item)
+    };
+    // The longest stretch of the item's own time any layer shows, and the first comp's rate.
+    let mut used = Tick::ZERO;
+    let mut used_rate = None;
+    for (_, c) in s.project.comps() {
+        for l in c.layers.iter().filter(|l| is_user(l)) {
+            used = used.max(l.layer_time(l.in_point)).max(l.layer_time(l.out_point));
+            used_rate.get_or_insert(c.frame_rate);
+        }
+    }
+    let rate = rate.or(used_rate).unwrap_or(FrameRate::FPS_29_97);
+    let fallback = Tick::from_seconds_f64(if s.prefs.import.still_footage == "seconds" { s.prefs.import.still_seconds } else { 10.0 });
+    let dur = own.filter(|d| *d > Tick::ZERO).unwrap_or(if used > Tick::ZERO { used } else { fallback }).max(rate.frame_duration());
+    let base = it.name.rsplit_once('.').map(|(a, _)| a.to_string()).unwrap_or(it.name.clone());
+    let name = format!("{base} Comp");
+    grouped(s, "Replace with Precomposition", |s| {
+        let c = Comp { pixel_aspect, ..Comp::new(w.max(1), h.max(1), rate, dur) };
+        let comp = s.edit("Replace with Precomposition", None, |proj, _| Ok(proj.add_item(&name, Label::Sandstone, it.parent, ItemKind::Comp(c.into()))))?;
+        let inner = id_of(&s.execute("layer.addItem", json!({"comp": comp.0, "item": item.0, "time": 0.0, "duration": dur.seconds()}))?, "layer")?;
+        let replaced = s.edit("Replace with Precomposition", None, |proj, st| {
+            let mut n = 0u64;
+            let ids: Vec<ItemId> = proj.items.keys().copied().filter(|c| *c != comp).collect();
+            for cid in ids {
+                if let Some(c) = proj.comp_mut(cid) {
+                    for l in c.layers.iter_mut().filter(|l| is_user(l)) {
+                        l.source = LayerSource::Comp { item: comp };
+                        n += 1;
+                    }
+                }
+            }
+            st.project_selection = vec![comp];
+            Ok(n)
+        })?;
+        Ok(json!({"comp": comp.0, "layer": inner, "replaced": replaced}))
+    })
+}
+
+fn has_footage_or_solid(s: &Session) -> std::result::Result<(), String> {
+    has_project_selection(s)?;
+    let ok = s.state.project_selection.iter().any(|i| matches!(s.project.item(*i).map(|x| &x.kind), Some(ItemKind::Footage(_) | ItemKind::Solid(_))));
+    if ok { Ok(()) } else { Err("select a footage or solid item".into()) }
+}
+
 fn has_footage(s: &Session) -> std::result::Result<(), String> {
     has_project_selection(s)?;
     let ok = s.state.project_selection.iter().any(|i| matches!(s.project.item(*i).map(|x| &x.kind), Some(ItemKind::Footage(_))));
@@ -178,7 +245,8 @@ fn has_footage(s: &Session) -> std::result::Result<(), String> {
 
 /// `File.execute()` from scripts (and agents): open a file with its default application.
 /// Needs Allow Scripts to Write Files and Access Network; with Warn User When Executing Files on,
-/// the frontend asks first (`confirmed: true` skips the question).
+/// the frontend asks first. `confirmed: true` is the frontend's answer to that question: a
+/// script can't give it for itself (#1246), so a script's request always asks.
 fn execute_file(s: &mut Session, p: &Value) -> Result<Value> {
     let path = str_p(p, "path").ok_or_else(|| bad("file.executeFile", "missing `path`"))?;
     if !s.prefs.scripting.allow_scripts_write_files {
@@ -190,7 +258,8 @@ fn execute_file(s: &mut Session, p: &Value) -> Result<Value> {
     if !std::path::Path::new(path).exists() {
         return Err(bad("file.executeFile", format!("no file {path}")));
     }
-    if s.prefs.scripting.warn_executing_files && !b_p(p, "confirmed").unwrap_or(false) {
+    let confirmed = b_p(p, "confirmed").unwrap_or(false) && !s.running_for_script();
+    if s.prefs.scripting.warn_executing_files && !confirmed {
         s.events.push(Event::Frontend { command: "app.confirmExecute".into(), params: json!({"path": path}) });
         return Ok(json!({"needsConfirmation": path}));
     }
@@ -582,7 +651,15 @@ pub fn specs() -> Vec<CommandSpec> {
         cmd!("edit.history", "History", [], None, "{steps?: n (undo n steps), redo?: n}", has_history, history),
         cmd!("file.importRecent", "Import Recent Footage", [], None, "{index? | path?}", has_recent_footage, import_recent),
         cmd!("file.clearRecentFootage", "Clear Recent Footage", ["File", "Import Recent Footage"], None, "{}", has_recent_footage, clear_recent_footage),
-        cmd!("anim.applyRecentPreset", "Recent Animation Presets", [], None, "{index? | path?, layers?}", has_recent_presets, apply_recent_preset),
+        cmd!(
+            "anim.applyRecentPreset",
+            "Recent Animation Presets",
+            [],
+            Some("Cmd+Alt+Shift+F"),
+            "{index? | path?, layers?}",
+            has_recent_presets,
+            apply_recent_preset
+        ),
         cmd!(
             "anim.clearRecentPresets",
             "Clear Recent Presets",
@@ -594,6 +671,7 @@ pub fn specs() -> Vec<CommandSpec> {
         ),
         cmd!("file.saveCopyAsXml", "Save a Copy As XML...", ["File", "Save As"], None, "{path: .ecprojx}", always, save_copy_xml),
         cmd!("file.replaceWithLayeredComp", "With Layered Comp", ["File", "Replace Footage"], None, "{item?}", has_footage, replace_with_layered_comp),
+        cmd!("file.replaceWithPrecomp", "Replace with Precomposition", [], None, "{item?}", has_footage_or_solid, replace_with_precomp),
         cmd!("file.executeFile", "Execute File", [], None, "{path, confirmed?}", always, execute_file),
         cmd!("view.assign3dShortcut", "Assign Shortcut to 3D View", [], None, "{slot: F10|F11|F12, comp?}", has_comp, assign_view_shortcut),
         cmd!(

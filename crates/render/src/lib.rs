@@ -216,7 +216,7 @@ struct FxHost<'r, 'a, 'c> {
     /// whose effects run on the comp below).
     origin: [f64; 2],
     /// Index of the effect being rendered (bounds `self_at` to effects before it).
-    index: std::sync::atomic::AtomicUsize,
+    index: usize,
     original: Option<&'c Buf>,
 }
 
@@ -307,7 +307,7 @@ impl EffectHost for FxHost<'_, '_, '_> {
         if self.r.depth > MAX_FX_DEPTH || self.layer.switches.adjustment {
             return None;
         }
-        let n = effects.min(self.index.load(std::sync::atomic::Ordering::Relaxed));
+        let n = effects.min(self.index);
         let t = self.layer.comp_time(Tick::from_seconds_f64(layer_time));
         let sub = self.r.nested();
         sub.layer_input(&self.ctx.at(t), self.layer, n).map(|b| (*b).clone())
@@ -337,8 +337,7 @@ impl EffectHost for FxHost<'_, '_, '_> {
     }
 
     fn params_at(&self, layer_time: f64) -> Option<Params> {
-        let i = self.index.load(std::sync::atomic::Ordering::Relaxed);
-        let g = self.layer.effects()?.groups().nth(i)?;
+        let g = self.layer.effects()?.groups().nth(self.index)?;
         let ctx = self.ctx.at(self.layer.comp_time(Tick::from_seconds_f64(layer_time)));
         Some(effectcraft_effects::flatten_params(g, &mut |pr| ctx.value(self.layer, pr)))
     }
@@ -455,6 +454,12 @@ pub trait Accelerator: Send + Sync {
     /// faster compositor. `None` = Auto always tries the accelerator first.
     fn auto_pick(&self) -> Option<&AutoPick> {
         None
+    }
+    /// Whether the accelerator can still render frames. `false` once it has stopped for good
+    /// (its device was lost or retired): every frame it is asked for falls back to the CPU, so
+    /// callers that limit frames in flight for it can stop doing so.
+    fn available(&self) -> bool {
+        true
     }
     /// Deferred readbacks: where a GPU readback cannot be waited for (WebGPU in a browser
     /// worker), a frame renders in *passes*. A readback the accelerator does not have yet is
@@ -861,6 +866,19 @@ impl<'a> Renderer<'a> {
         Region::Full
     }
 
+    /// Whether `layer`'s processed buffer (source → masks → effects) is cached and the same as
+    /// one frame earlier: drawing it from the layer cache (an accelerator uploads it once) beats
+    /// re-running its effects every frame.
+    pub fn layer_is_static(&self, ctx: &EvalCtx, layer: &Layer) -> bool {
+        if self.cache.is_none() {
+            return false;
+        }
+        let (scale, draft, blur) = (self.raster_scale(ctx, layer), self.opts.draft, self.mb_on(ctx, layer));
+        let prev = ctx.time - ctx.comp.frame_rate.frame_duration();
+        let now = cache::layer_key(ctx, layer, scale, draft, blur);
+        now.is_some() && now == cache::layer_key(&ctx.at(prev), layer, scale, draft, blur)
+    }
+
     /// Rasterisation scale of a layer's source: the output scale, or — for text and shape layers,
     /// which are always continuously rasterised (#390, #751), and Continuously Rasterize vector
     /// footage — the output scale times the layer's on-screen scale (quarter-octave steps, rounded
@@ -1145,7 +1163,7 @@ impl<'a> Renderer<'a> {
                 buf
             });
         }
-        let host = FxHost { r: self, ctx, layer, origin, index: Default::default(), original: original.as_ref() };
+        let host = FxHost { r: self, ctx, layer, origin, index: 0, original: original.as_ref() };
         let env = EffectEnv {
             masks: &mask_shapes,
             host: Some(&host),
@@ -1179,12 +1197,21 @@ impl<'a> Renderer<'a> {
             {
                 let run: Vec<_> = stack[k..].iter().take_while(|(_, _, s)| s.gpu && a.supports_effect(s.id)).collect();
                 let params: Vec<Params> = run.iter().map(|(_, g, _)| self.effect_params(ctx, layer, g)).collect();
+                let hosts: Vec<_> = run.iter().map(|(i, _, _)| FxHost { index: *i, ..host }).collect();
                 let steps: Vec<FxStep> = run
                     .iter()
                     .zip(&params)
-                    .map(|((i, g, s), params)| FxStep {
+                    .zip(&hosts)
+                    .map(|(((i, g, s), params), host)| FxStep {
                         spec: s,
-                        ctx: EffectCtx { params, time: lt.seconds(), layer_size, seed: g.uid as u32, adjustment, env: EffectEnv { effect_index: *i, ..env } },
+                        ctx: EffectCtx {
+                            params,
+                            time: lt.seconds(),
+                            layer_size,
+                            seed: g.uid as u32,
+                            adjustment,
+                            env: EffectEnv { host: Some(host), effect_index: *i, ..env },
+                        },
                     })
                     .collect();
                 let t0 = web_time::Instant::now();
@@ -1199,8 +1226,8 @@ impl<'a> Renderer<'a> {
             }
             k += 1;
             let params = self.effect_params(ctx, layer, g);
-            host.index.store(i, std::sync::atomic::Ordering::Relaxed);
-            let env = EffectEnv { effect_index: i, ..env };
+            let host = FxHost { index: i, ..host };
+            let env = EffectEnv { host: Some(&host), effect_index: i, ..env };
             let ectx = EffectCtx { params: &params, time: lt.seconds(), layer_size, seed: g.uid as u32, adjustment, env };
             let t0 = web_time::Instant::now();
             target.cpu(&mut |buf| {
@@ -1945,13 +1972,26 @@ impl<'a> Renderer<'a> {
     /// [`Self::composite_iso`] with the track matte's pixels already drawn (`matte`, e.g. a 3D
     /// matte seen through the camera); otherwise the matte layer is placed in 2D.
     pub(crate) fn composite_iso_with(&self, ctx: &EvalCtx, layer: &Layer, mut iso: Image, canvas: &mut Image, opacity: f32, matte_img: Option<Image>) {
+        self.apply_track_matte(ctx, layer, &mut iso, matte_img);
+        if layer.preserve_transparency {
+            iso.data.par_iter_mut().zip(canvas.data.par_iter()).for_each(|(p, q)| {
+                for c in p.iter_mut() {
+                    *c *= q[3];
+                }
+            });
+        }
+        canvas.blend_from(&iso, layer.blend_mode, opacity, layer.id.0 as u32);
+    }
+
+    /// Multiply `img` (comp-sized) by the layer's track matte, if it has one; `matte_img` as in
+    /// [`Self::composite_iso_with`].
+    fn apply_track_matte(&self, ctx: &EvalCtx, layer: &Layer, img: &mut Image, matte_img: Option<Image>) {
         let matte = layer.track_matte.and_then(|tm| ctx.comp.layer(tm.layer).filter(|m| m.id != layer.id).map(|m| (m, tm.kind)));
-        let preserve = layer.preserve_transparency;
         if let Some((m, kind)) = matte {
             let mimg = match matte_img {
-                Some(i) if i.width == canvas.width && i.height == canvas.height => i,
+                Some(i) if i.width == img.width && i.height == img.height => i,
                 _ => {
-                    let mut mimg = Image::new(canvas.width, canvas.height);
+                    let mut mimg = Image::new(img.width, img.height);
                     if m.is_active_at(ctx.time)
                         && let Some(mb) = self.layer_buf(ctx, m)
                     {
@@ -1961,7 +2001,7 @@ impl<'a> Renderer<'a> {
                     mimg
                 }
             };
-            iso.data.par_iter_mut().zip(mimg.data.par_iter()).for_each(|(p, q)| {
+            img.data.par_iter_mut().zip(mimg.data.par_iter()).for_each(|(p, q)| {
                 let k = match kind {
                     MatteKind::Alpha => q[3],
                     MatteKind::AlphaInverted => 1.0 - q[3],
@@ -1974,22 +2014,16 @@ impl<'a> Renderer<'a> {
                 }
             });
         }
-        if preserve {
-            iso.data.par_iter_mut().zip(canvas.data.par_iter()).for_each(|(p, q)| {
-                for c in p.iter_mut() {
-                    *c *= q[3];
-                }
-            });
-        }
-        canvas.blend_from(&iso, layer.blend_mode, opacity, layer.id.0 as u32);
     }
 
-    /// Adjustment layer: effects applied to the comp below, limited to the layer's footprint.
+    /// Adjustment layer: effects applied to the comp below, limited to the layer's footprint
+    /// and its track matte.
     fn draw_adjustment(&self, ctx: &EvalCtx, layer: &Layer, canvas: &mut Image, opacity: f32) {
         let Some(mut foot) = self.source(ctx, layer) else { return };
         let _ = masks::apply(ctx, layer, &mut foot, self.mask_blur(ctx, layer));
         let mut matte = Image::new(canvas.width, canvas.height);
         self.place(ctx, layer, &foot, &mut matte, BlendMode::Normal, 1.0);
+        self.apply_track_matte(ctx, layer, &mut matte, None);
         let o = self.roi_offset().map(|(x, y, _, _)| [-x, -y]).unwrap_or([0.0; 2]);
         let mut below = Buf { img: canvas.clone(), offset: o, scale: self.opts.scale };
         // Effects run in the working space, not the linear blending space.
@@ -2066,7 +2100,7 @@ impl<'a> Renderer<'a> {
     /// applied).
     pub fn visible_layers(&self, ctx: &EvalCtx<'a>) -> Vec<&'a Layer> {
         let (comp, t) = (ctx.comp, ctx.time);
-        let any_solo = comp.layers.iter().any(|l| l.switches.solo && l.source.is_av() && l.is_active_at(t));
+        let any_solo = comp.layers.iter().any(|l| l.switches.solo && l.source.is_av());
         comp.layers
             .iter()
             .rev()

@@ -68,6 +68,26 @@ fn window_menu_opens_the_new_panels() {
     }
 }
 
+/// #1630: choosing a checked panel in the Window menu closes it, as in After Effects (it only
+/// brought the panel to the front, so the check mark never went away); choosing it again opens it.
+#[test]
+fn window_menu_closes_a_checked_panel() {
+    let mut h = harness();
+    let shown = |h: &Harness<'_, EffectcraftApp>| {
+        h.state().ui.dock.contains(PanelKind::Align) || h.state().ui.floating.iter().any(|f| f.panels.contains(&PanelKind::Align))
+    };
+    open(&mut h, "align");
+    assert!(shown(&h));
+    click(&mut h, "menu.Window");
+    let at = h.query_by_label("✔ Align").expect("Window ▸ Align, checked").rect().center();
+    click_at(&mut h, at);
+    assert!(!shown(&h), "Align closed");
+    click(&mut h, "menu.Window");
+    let at = h.query_by_label(" Align").expect("Window ▸ Align, unchecked").rect().center();
+    click_at(&mut h, at);
+    assert!(shown(&h), "Align open again");
+}
+
 #[test]
 fn scopes_switch_kind() {
     let mut h = harness();
@@ -126,6 +146,15 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(2);
 }
 
+fn double_click_at(h: &mut Harness<'_, EffectcraftApp>, pos: Pos2) {
+    h.input_mut().events.push(Event::PointerMoved(pos));
+    h.step();
+    for pressed in [true, false, true, false] {
+        h.input_mut().events.push(Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() });
+    }
+    h.run_steps(3);
+}
+
 fn hover(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.run_steps(3);
@@ -173,6 +202,8 @@ fn saved_workspaces_persist_across_sessions() {
 #[test]
 fn saved_workspace_is_listed_in_the_workspace_menu() {
     let mut h = harness();
+    // Saving needs a settings folder.
+    h.state_mut().session.config = Some(Arc::new(MemoryConfig::default()));
     let ctx = h.ctx.clone();
     effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "window.workspace", json!({"name": "Minimal"})).unwrap();
     effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "window.saveWorkspaceAs", json!({"name": "My Layout"})).unwrap();
@@ -465,6 +496,146 @@ fn essential_graphics_scale_keeps_constrain_proportions() {
     drag_x(&mut h, &format!("{value}.0"), 40.0);
     let unlinked = scale(&h);
     assert!(unlinked[0] > linked[0] && unlinked[1] == linked[1], "unlinked, X moves alone: {unlinked:?}");
+}
+
+/// #956: the Properties panel's Scale chain link shares the Timeline's Constrain Proportions
+/// state: unlinking in Properties unlinks the Timeline row too, and X/Y scale together only
+/// while linked.
+#[test]
+fn properties_scale_link_shares_the_timeline_state() {
+    let mut h = harness();
+    let layer = h.state().session.active_comp().unwrap().layers[0].id.0;
+    h.state_mut().session.execute("layer.select", json!({"layers": [layer]})).unwrap();
+    h.state_mut().session.execute("prop.set", json!({"layer": layer, "path": "transform/scale", "value": [100.0, 50.0]})).unwrap();
+    open(&mut h, "properties");
+    let uid = {
+        let comp = h.state().session.active_comp().unwrap();
+        let l = comp.layers.iter().find(|l| l.id.0 == layer).unwrap();
+        l.props.prop("transform/scale").unwrap().uid
+    };
+    let link = format!("properties.prop.{uid}.constrain");
+    assert!(h.state().auto.find(&link).is_some(), "the chain link is drawn");
+    let scale = |h: &Harness<'_, EffectcraftApp>| {
+        let comp = h.state().session.active_comp().unwrap();
+        let l = comp.layers.iter().find(|l| l.id.0 == layer).unwrap();
+        l.props.prop("transform/scale").unwrap().value.components()
+    };
+    // Linked: dragging X scales Y with it.
+    drag_x(&mut h, &format!("properties.prop.{uid}.value.0"), 40.0);
+    let linked = scale(&h);
+    assert!(linked[0] > 100.0, "{linked:?}");
+    assert!((linked[1] / linked[0] - 0.5).abs() < 1e-6, "Y follows X in proportion: {linked:?}");
+    // Unlinking in Properties writes the shared state, so the Timeline row unlinks too.
+    click(&mut h, &link);
+    assert!(h.state().ui.timeline.unlinked.contains(&uid), "unlinking writes the shared state");
+    drag_x(&mut h, &format!("properties.prop.{uid}.value.0"), 40.0);
+    let unlinked = scale(&h);
+    assert!(unlinked[0] > linked[0] && unlinked[1] == linked[1], "unlinked, X moves alone: {unlinked:?}");
+    // Re-linking clears it again.
+    click(&mut h, &link);
+    assert!(!h.state().ui.timeline.unlinked.contains(&uid), "re-linking clears the shared state");
+}
+
+#[test]
+fn properties_label_double_click_reveals_without_editing() {
+    let mut h = harness();
+    let layer = h.state().session.active_comp().unwrap().layers[0].id;
+    let other = h.state_mut().session.execute("layer.newSolid", json!({"name": "Other", "color": "#204060"})).unwrap()["layer"].as_u64().unwrap();
+    h.state_mut().session.execute("prop.addKey", json!({"layer": layer.0, "path": "transform/opacity", "time": 1.0, "value": 50.0})).unwrap();
+    h.state_mut().session.execute("layer.select", json!({"layers": [layer.0]})).unwrap();
+    let comp = h.state().session.active_comp().unwrap();
+    let opacity = comp.layer(layer).unwrap().props.prop("transform/opacity").unwrap().uid;
+    let other_scale = comp.layers.iter().find(|l| l.id.0 == other).unwrap().props.prop("transform/scale").unwrap().uid;
+    let ctx = h.ctx.clone();
+    effectcraft_ui_egui::menus::frontend(h.state_mut(), &ctx, "timeline.revealProps", json!({"props": [{"layer": other, "prop": other_scale}]})).unwrap();
+    open(&mut h, "properties");
+    open(&mut h, "renderQueue");
+    h.state_mut().ui.timeline.search = "no matching property".into();
+    h.run_steps(3);
+    let value = h.state().auto.find(&format!("properties.prop.{opacity}.value")).unwrap().rect;
+    let label = pos2(value[0] - 60.0, value[1] + value[3] / 2.0);
+    let row = format!("timeline.prop.{opacity}.row");
+    click_at(&mut h, label);
+    assert_eq!(h.state().ui.timeline.search, "no matching property");
+    assert!(h.state().auto.find(&row).is_none());
+    h.run_steps(30);
+    let before = serde_json::to_value(h.state().session.project.as_ref()).unwrap();
+    let undo = h.state().session.history.undo.len();
+    let selected = h.state().session.state.selected_layers.clone();
+    for _ in 0..2 {
+        double_click_at(&mut h, label);
+        assert!(h.state().auto.find(&row).is_some(), "Opacity is visible for keyframing");
+        assert!(h.state().auto.find(&format!("timeline.prop.{other_scale}.row")).is_some(), "the other layer keeps its reveal");
+        assert_eq!(h.state().ui.timeline.search, "");
+        h.run_steps(30);
+    }
+    assert_eq!(serde_json::to_value(h.state().session.project.as_ref()).unwrap(), before, "revealing preserves values and keyframes");
+    assert_eq!(h.state().session.history.undo.len(), undo);
+    assert_eq!(h.state().session.state.selected_layers, selected);
+}
+
+#[test]
+fn properties_reveal_scrolls_to_the_displayed_layer_in_a_multiple_selection() {
+    let mut h = harness();
+    let layer = h.state().session.active_comp().unwrap().layers[0].id;
+    for _ in 0..40 {
+        h.state_mut().session.execute("layer.newSolid", json!({"name": "Spacer", "color": "#204060"})).unwrap();
+    }
+    let top = h.state().session.active_comp().unwrap().layers[0].id;
+    h.state_mut().session.execute("layer.select", json!({"layers": [layer.0, top.0]})).unwrap();
+    let uid = h.state().session.active_comp().unwrap().layer(layer).unwrap().props.prop("transform/opacity").unwrap().uid;
+    open(&mut h, "properties");
+    h.state_mut().toggle_maximize(PanelKind::Properties);
+    h.run_steps(3);
+    let r = h.state().auto.find(&format!("properties.prop.{uid}.label")).unwrap().rect;
+    double_click_at(&mut h, pos2(r[0] + r[2] / 2.0, r[1] + r[3] / 2.0));
+    assert!(h.state().auto.find(&format!("timeline.prop.{uid}.row")).is_some(), "the displayed layer's property is in view");
+    assert_eq!(h.state().session.state.selected_layers, [layer, top]);
+}
+
+#[test]
+fn properties_transform_labels_reveal_the_corresponding_property() {
+    let mut h = harness();
+    let layer = h.state().session.active_comp().unwrap().layers[0].id;
+    h.state_mut().session.execute("layer.select", json!({"layers": [layer.0]})).unwrap();
+    let props: Vec<u64> =
+        h.state().session.active_comp().unwrap().layer(layer).unwrap().transform().unwrap().props().filter(|p| !p.three_d_only).map(|p| p.uid).collect();
+    open(&mut h, "properties");
+    for uid in &props {
+        h.state_mut().ui.timeline.open_layers.remove(&layer.0);
+        h.run_steps(30);
+        assert!(h.state().auto.find(&format!("timeline.prop.{uid}.row")).is_none());
+        let r = h.state().auto.find(&format!("properties.prop.{uid}.label")).unwrap().rect;
+        double_click_at(&mut h, pos2(r[0] + r[2] / 2.0, r[1] + r[3] / 2.0));
+        for candidate in &props {
+            assert_eq!(h.state().auto.find(&format!("timeline.prop.{candidate}.row")).is_some(), candidate == uid);
+        }
+    }
+}
+
+/// Gap 7: the Backgrounds category is listed under * Animation Presets and a preset applies on double-click.
+#[test]
+fn background_presets_are_listed_and_apply() {
+    let mut h = harness();
+    let layer = h.state().session.active_comp().unwrap().layers[0].id.0;
+    h.state_mut().session.execute("layer.select", json!({"layers": [layer]})).unwrap();
+    open(&mut h, "effectsPresets");
+    h.state_mut().ui.effects_search = "slow fog".into();
+    h.run_steps(3);
+    assert!(h.state().auto.find("effects.category.presets/Backgrounds").is_some(), "the Backgrounds folder is listed");
+    let e = h.state().auto.find("effects.preset.builtin.slowFog").expect("Slow Fog is listed").clone();
+    let p: Pos2 = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
+    h.input_mut().events.push(Event::PointerMoved(p));
+    h.step();
+    for _ in 0..2 {
+        for pressed in [true, false] {
+            h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() });
+        }
+    }
+    h.run_steps(3);
+    let comp = h.state().session.active_comp().unwrap();
+    let names: Vec<String> = comp.layers[0].effects().unwrap().groups().map(|g| g.name.clone()).collect();
+    assert_eq!(names, ["Fractal Noise", "Tint"]);
 }
 
 /// #757: Effects & Presets lists the built-in Transitions presets under * Animation Presets;

@@ -161,6 +161,32 @@ fn track_matte_kinds_keep_and_invert() {
     }
 }
 
+/// An adjustment layer with a track matte applies its effects only where the matte allows: an
+/// Invert over a 0.25 grey with an opaque white 50×50 matte at the left of the comp (#1201).
+#[test]
+fn track_matte_limits_an_adjustment_layer() {
+    for (kind, inside) in [(MatteKind::Alpha, true), (MatteKind::AlphaInverted, false), (MatteKind::Luma, true), (MatteKind::LumaInverted, false)] {
+        let (mut p, cid, comp) = setup();
+        let mut matte = solid(&mut p, &comp, [1.0, 1.0, 1.0], 50, 50);
+        matte.props.prop_mut("transform/position").unwrap().value = Value::Vec3([50.0, 50.0, 0.0]);
+        matte.switches.video = false;
+        let mut adj = solid(&mut p, &comp, [1.0, 1.0, 1.0], 200, 100);
+        adj.switches.adjustment = true;
+        add_effect_200(&mut p, &mut adj, "ec.channel.invert", &[]);
+        adj.track_matte = Some(TrackMatte { layer: matte.id, kind });
+        let bg = solid(&mut p, &comp, [0.25, 0.25, 0.25], 200, 100);
+        let c = p.comp_mut(cid).unwrap();
+        c.layers.push(matte);
+        c.layers.push(adj);
+        c.layers.push(bg);
+        let img = render_frame(&p, cid, Tick::ZERO, 1.0);
+        let (g_in, g_out) = (img.get(50, 50)[0], img.get(150, 50)[0]);
+        let (want_in, want_out) = if inside { (0.75, 0.25) } else { (0.25, 0.75) };
+        assert!((g_in - want_in).abs() < 1e-4 && (g_out - want_out).abs() < 1e-4, "{kind:?}: {g_in} inside, {g_out} outside");
+        assert_eq!(img.get(150, 50)[3], 1.0, "{kind:?} keeps the comp opaque");
+    }
+}
+
 #[test]
 fn shape_layer_draws_fill_and_stroke() {
     let (mut p, cid, comp) = setup();
@@ -926,4 +952,61 @@ fn shape_content_bounds_are_the_visual_edges() {
         let b = crate::content_bounds(&ctx, &l).unwrap();
         assert!(b.iter().zip([-half, -half, half, half]).all(|(a, e)| (a - e).abs() < 1e-6), "{stroke:?}: {b:?}");
     }
+}
+
+/// Solo is not time-dependent (as in After Effects): while any layer is soloed, the others stay
+/// excluded even when the playhead is outside the soloed layer's in-out range.
+#[test]
+fn solo_excludes_other_layers_outside_the_soloed_layers_range() {
+    let (mut p, cid, comp) = setup();
+    let a = solid(&mut p, &comp, [1.0, 0.0, 0.0], 200, 100);
+    let mut b = solid(&mut p, &comp, [0.0, 0.0, 1.0], 200, 100);
+    b.in_point = Tick::from_seconds_f64(1.0);
+    b.switches.solo = true;
+    let c = p.comp_mut(cid).unwrap();
+    c.layers.push(b);
+    c.layers.push(a);
+    let first = render_frame(&p, cid, Tick::from_seconds_f64(0.5), 1.0);
+    assert_eq!(first.get(100, 50), [0.0, 0.0, 0.0, 0.0], "neither A nor B before B's in point");
+    let second = render_frame(&p, cid, Tick::from_seconds_f64(1.5), 1.0);
+    assert_eq!(second.get(100, 50), [0.0, 0.0, 1.0, 1.0], "only B inside its range");
+}
+
+/// #1252: a layer blended with a CC Particle World layer, under a camera panned by `pan` px.
+fn scene_reader_dependency(pan: f64) -> (Project, ItemId) {
+    let (mut p, cid, comp) = setup();
+    let mut source = solid(&mut p, &comp, [0.0, 0.0, 0.0], 200, 100);
+    let vals = [("birthRate", Value::Scalar(2.0)), ("particle/particleType", Value::Enum(2)), ("particle/birthSize", Value::Scalar(0.1))];
+    add_effect(&mut p, &mut source, "ec.sim.ccparticleworld", [200.0, 100.0], &vals);
+    source.switches.video = false;
+    let mut owner = solid(&mut p, &comp, [0.0, 0.0, 0.0], 200, 100);
+    add_effect_200(&mut p, &mut owner, "ec.channel.blend", &[("blendWithLayer", Value::Layer(Some(source.id.0))), ("blendWithOriginal", Value::Scalar(0.0))]);
+    let mut cam = build::layer(&mut p, &comp, "Camera", LayerSource::Camera, (200, 100), None);
+    for path in ["transform/position", "transform/poi"] {
+        let pr = cam.props.prop_mut(path).unwrap();
+        let Value::Vec3(v) = pr.value else { panic!("{path}: {:?}", pr.value) };
+        pr.value = Value::Vec3([v[0] + pan, v[1], v[2]]);
+    }
+    p.comp_mut(cid).unwrap().layers = vec![cam, owner, source];
+    (p, cid)
+}
+
+/// #1252: the owner's cache key covers the comp camera and lights that a layer it selects reads,
+/// though the owner itself runs no scene-reading effect.
+#[test]
+fn a_selected_layer_reading_the_comp_scene_invalidates_its_owner() {
+    let t = Tick::from_seconds_f64(1.0);
+    let (p, cid) = scene_reader_dependency(0.0);
+    let (q, _) = scene_reader_dependency(40.0);
+    let key = |p: &Project| {
+        let c = p.comp(cid).unwrap();
+        crate::cache::layer_key(&crate::EvalCtx::new(p, cid, c, t), &c.layers[1], 1.0, false, false).unwrap()
+    };
+    assert_ne!(key(&p), key(&q), "moving the camera changes the owner's key");
+    let cache = crate::LayerCache::default();
+    let here = render_cached(&p, cid, t, Some(&cache));
+    let panned = render_cached(&q, cid, t, Some(&cache));
+    assert_same(&panned, &render_cached(&q, cid, t, None), "cached render after the camera moved");
+    let (a, b) = (particles_x(&here), particles_x(&panned));
+    assert!(b < a - 20.0, "the blended particles follow the camera: {a} -> {b}");
 }
