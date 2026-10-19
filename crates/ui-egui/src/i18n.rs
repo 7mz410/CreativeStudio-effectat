@@ -9,6 +9,8 @@ use crate::EffectcraftApp;
 pub(crate) mod effects;
 /// Translations for the panels, tooltips and dialogs below the menu bar (see the module docs).
 mod ui;
+/// Visual order for the right-to-left catalogs (Arabic).
+mod bidi;
 use effectcraft_engine::menus::{MenuEntry, MenuNode};
 pub(crate) use ui::{set_current, tr, tr_args};
 

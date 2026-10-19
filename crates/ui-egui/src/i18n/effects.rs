@@ -33,6 +33,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
+use super::bidi;
 use super::ui::current;
 
 /// One row: effect id, the registry's English name, the translation.
@@ -43,18 +44,35 @@ type Row = (&'static str, &'static str, &'static str);
 struct Catalog {
     rows: &'static [Row],
     categories: &'static [(&'static str, &'static str)],
-    /// `rows` indexed by effect id, built on first use: the panels look a name up once per drawn
-    /// row and per frame.
-    index: OnceLock<HashMap<&'static str, (&'static str, &'static str)>>,
+    /// Right-to-left: the translations are stored in logical order and read in visual order.
+    rtl: bool,
+    /// The lookups, built on first use: the panels look a name up once per drawn row and per frame.
+    index: OnceLock<Index>,
+}
+
+/// `rows` by effect id and `categories` by English name, with the translations in the order drawn.
+struct Index {
+    rows: HashMap<&'static str, (&'static str, &'static str)>,
+    categories: Vec<(&'static str, &'static str)>,
 }
 
 impl Catalog {
+    fn index(&self) -> &Index {
+        self.index.get_or_init(|| {
+            let text = |translated: &'static str| if self.rtl { bidi::visual_static(translated) } else { translated };
+            Index {
+                rows: self.rows.iter().map(|&(id, english, translated)| (id, (english, text(translated)))).collect(),
+                categories: self.categories.iter().map(|&(english, translated)| (english, text(translated))).collect(),
+            }
+        })
+    }
+
     fn row(&self, id: &str) -> Option<(&'static str, &'static str)> {
-        self.index.get_or_init(|| self.rows.iter().map(|(id, english, translated)| (*id, (*english, *translated))).collect()).get(id).copied()
+        self.index().rows.get(id).copied()
     }
 
     fn category(&self, source: &str) -> Option<&'static str> {
-        self.categories.iter().find(|(english, _)| *english == source).map(|(_, translated)| *translated)
+        self.index().categories.iter().find(|(english, _)| *english == source).map(|(_, translated)| *translated)
     }
 }
 
@@ -67,10 +85,10 @@ impl Catalog {
 /// with empty tables, so a translator fills rows in without touching this function, and until
 /// then those languages draw the registry's English name.
 fn catalog(language: &str) -> Option<&'static Catalog> {
-    static SIMPLIFIED: Catalog = Catalog { rows: SIMPLIFIED_CHINESE, categories: SIMPLIFIED_CHINESE_CATEGORIES, index: OnceLock::new() };
-    static TRADITIONAL: Catalog = Catalog { rows: TRADITIONAL_CHINESE, categories: TRADITIONAL_CHINESE_CATEGORIES, index: OnceLock::new() };
-    static JAPANESE: Catalog = Catalog { rows: JAPANESE_EFFECTS, categories: JAPANESE_CATEGORIES, index: OnceLock::new() };
-    static ARABIC: Catalog = Catalog { rows: ARABIC_EFFECTS, categories: ARABIC_CATEGORIES, index: OnceLock::new() };
+    static SIMPLIFIED: Catalog = Catalog { rows: SIMPLIFIED_CHINESE, categories: SIMPLIFIED_CHINESE_CATEGORIES, rtl: false, index: OnceLock::new() };
+    static TRADITIONAL: Catalog = Catalog { rows: TRADITIONAL_CHINESE, categories: TRADITIONAL_CHINESE_CATEGORIES, rtl: false, index: OnceLock::new() };
+    static JAPANESE: Catalog = Catalog { rows: JAPANESE_EFFECTS, categories: JAPANESE_CATEGORIES, rtl: false, index: OnceLock::new() };
+    static ARABIC: Catalog = Catalog { rows: ARABIC_EFFECTS, categories: ARABIC_CATEGORIES, rtl: true, index: OnceLock::new() };
     match language {
         "zh-hans" => Some(&SIMPLIFIED),
         "zh-hant" => Some(&TRADITIONAL),

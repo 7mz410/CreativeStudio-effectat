@@ -112,6 +112,8 @@ rfd = "0.17"
 cpal = "0.16"
 # The operating system's interface language (MIT/Apache-2.0, no dependencies on desktop).
 sys-locale = "0.3"
+# Visual order for right-to-left (Arabic) interface text (MIT/Apache-2.0).
+unicode-bidi = "0.3.18"
 
 # Local co-development against a FilmCraft checkout next to this repo: uncomment.
 # [patch."https://github.com/storytold/filmcraft"]

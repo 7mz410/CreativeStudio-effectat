@@ -18,6 +18,8 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::OnceLock;
 
+use super::bidi;
+
 thread_local! {
     /// The resolved interface language ("en", "ja", "zh-hans", "zh-hant", "uk", "pt-br", "cs", "es", "ar"); "en" until the first
     /// frame sets it.
@@ -59,7 +61,9 @@ fn catalog(language: &str) -> Option<&'static Index> {
         "ar" => (&AR, ARABIC),
         _ => return None,
     };
-    Some(index.get_or_init(|| rows.iter().copied().collect()))
+    // Arabic rows are kept in logical order in the source; each is put in visual order once, here.
+    let rtl = language == "ar";
+    Some(index.get_or_init(|| rows.iter().map(|&(source, text)| (source, if rtl { bidi::visual_static(text) } else { text })).collect()))
 }
 
 /// Translate one interface string: the current language's row for `text`, or `text` itself.
