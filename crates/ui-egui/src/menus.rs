@@ -1341,8 +1341,8 @@ fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) -> Option<Res
     let (key, ask) = match id {
         "file.import" | "file.importMultiple" => ("paths", Ask::Import),
         "file.open" => ("path", Ask::OpenProject),
-        "file.save" if app.session.path.is_none() => ("path", Ask::Save("Untitled Project.ecproj")),
-        "file.saveAs" | "file.saveCopy" => ("path", Ask::Save("Untitled Project.ecproj")),
+        "file.save" if app.session.path.is_none() => ("path", Ask::Save("Untitled Project.effectat")),
+        "file.saveAs" | "file.saveCopy" => ("path", Ask::Save("Untitled Project.effectat")),
         "comp.saveFrameAs" => ("path", Ask::Save("Frame.png")),
         "comp.saveFrameAsPsd" => ("path", Ask::Save("Frame.psd")),
         "comp.saveFrameAsExr" => ("path", Ask::Save("Frame.exr")),
@@ -1353,7 +1353,7 @@ fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) -> Option<Res
         "view.importGuides" => ("path", Ask::Open(&["json"])),
         "file.exportLottie" => ("path", Ask::Save("Animation.json")),
         "file.importLottie" => ("path", Ask::Open(&["json", "lottie"])),
-        "file.importProject" => ("path", Ask::Open(&["ecproj", "ecprojx"])),
+        "file.importProject" => ("path", Ask::Open(&["effectat", "ecproj", "ecprojx"])),
         "file.importTimeline" => ("path", Ask::Open(&["xml", "fcpxml", "otio", "edl", "aaf", "omf"])),
         "render.saveCurrentPreview" => ("path", Ask::Save("Preview.mp4")),
         "file.runScript" if params.get("name").is_none() => ("path", Ask::Open(&["jsx", "js", "jsonl", "json", "txt"])),
@@ -2467,7 +2467,7 @@ mod tests {
                 "file Animation.json [json]",
                 "file Untitled Project.ecprojx [ecprojx]",
                 "file Collected Files []",
-                "project Untitled Project.ecproj",
+                "project Untitled Project.effectat",
             ]
         );
         // Without the other dialog, the project one names any file.
@@ -2492,7 +2492,7 @@ mod tests {
         app.hooks.file_dialog_async = Some(Box::new(move |dialog, done| queue.lock().unwrap().push((dialog, done))));
         assert_eq!(invoke(&mut app, &ctx, "file.saveAs", json!({})).unwrap(), json!({"dialog": "file.saveAs"}));
         let (dialog, done) = pending.lock().unwrap().pop().expect("a dialog was shown");
-        assert_eq!(dialog, crate::FileDialog::Save { default: "Untitled Project.ecproj".into(), ext: "ecproj".into(), project: true });
+        assert_eq!(dialog, crate::FileDialog::Save { default: "Untitled Project.effectat".into(), ext: "effectat".into(), project: true });
         assert!(app.session.path.is_none(), "nothing saved until the dialog answers");
         let dir = std::env::temp_dir().join(format!("ec-dialog-answer-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();

@@ -39,6 +39,16 @@ pub const SCHEMA_EFFECT_SPACE: u32 = 2;
 /// The EffectCraft version, written into project files as `savedBy`.
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// The extension upstream EffectCraft saves projects with; still opened.
+pub const EXTENSION: &str = "ecproj";
+/// The extension effectat saves projects with: the same contents as [`EXTENSION`].
+pub const STUDIO_EXTENSION: &str = "effectat";
+
+/// Is `ext` (without the dot, any case) a project file extension, `.effectat` or `.ecproj`?
+pub fn is_project_ext(ext: &str) -> bool {
+    ext.eq_ignore_ascii_case(STUDIO_EXTENSION) || ext.eq_ignore_ascii_case(EXTENSION)
+}
+
 /// The EffectCraft version that wrote a project file (its `savedBy`), when it says.
 pub fn saved_by(text: &str) -> Option<String> {
     #[derive(Deserialize)]

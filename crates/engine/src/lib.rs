@@ -1284,6 +1284,8 @@ mod tests_sequence;
 #[cfg(test)]
 mod tests_settings;
 #[cfg(test)]
+mod tests_studio_ext;
+#[cfg(test)]
 mod tests_shortcut_cmds;
 #[cfg(test)]
 mod tests_stubs;

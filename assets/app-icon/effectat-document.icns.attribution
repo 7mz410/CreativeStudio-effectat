@@ -1,0 +1,8 @@
+asset:        effectat-document.icns
+title:        effectat document icon
+author:       Hamza Abu Ayyash (Creative Studio)
+source:       original work (file icons/effectat.svg, copied to effectat-document.svg, rendered with rsvg-convert, packed with iconutil)
+license:      MIT OR Apache-2.0
+license-file: assets/app-icon/LICENSE.txt
+added:        2026-10-19 for the Creative Studio project
+notes:        Document icon for .effectat project files (macOS document type; packaging/macos/package.sh copies it into the app bundle).

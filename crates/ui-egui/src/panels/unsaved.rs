@@ -58,14 +58,14 @@ pub fn on_close_requested(app: &mut EffectcraftApp, ctx: &egui::Context) {
     }
 }
 
-/// The project's display name: its file name, or `Untitled Project.ecproj`.
+/// The project's display name: its file name, or `Untitled Project.effectat`.
 pub fn project_name(app: &EffectcraftApp) -> String {
     app.session
         .path
         .as_deref()
         .and_then(|p| std::path::Path::new(p).file_name())
         .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "Untitled Project.ecproj".into())
+        .unwrap_or_else(|| "Untitled Project.effectat".into())
 }
 
 /// The window title: the project's path (or name) and `*` while it has unsaved changes.
@@ -219,7 +219,7 @@ mod tests {
         crate::menus::invoke(&mut app, &ctx, "file.newProject", json!({})).unwrap();
         assert!(app.dialog.is_none());
         modified(&mut app);
-        assert!(window_title(&app).ends_with("Untitled Project.ecproj *"), "{}", window_title(&app));
+        assert!(window_title(&app).ends_with("Untitled Project.effectat *"), "{}", window_title(&app));
         let r = crate::menus::invoke(&mut app, &ctx, "file.newProject", json!({})).unwrap();
         assert_eq!(r, json!({"dialog": "unsavedChanges"}));
         assert_eq!(app.dialog, Some(Dialog::UnsavedChanges));

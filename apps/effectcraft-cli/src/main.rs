@@ -231,7 +231,7 @@ impl Args {
         let mut a = Args { pos, opts, project: None };
         a.project = match a.opt("--project") {
             Some(p) => Some(p.to_string()),
-            None => a.pos.iter().position(|x| x.ends_with(".ecproj")).map(|i| a.pos.remove(i)),
+            None => a.pos.iter().position(|x| x.ends_with(".effectat") || x.ends_with(".ecproj")).map(|i| a.pos.remove(i)),
         };
         Ok(a)
     }

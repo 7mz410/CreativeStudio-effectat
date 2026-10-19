@@ -15,7 +15,7 @@ const C: &str = "file.importProject";
 /// Whether `path` names a project EffectCraft imports as a project (not as footage).
 pub(crate) fn is_project_path(path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
-    lower.ends_with(".ecproj") || lower.ends_with(".ecprojx")
+    lower.ends_with(".effectat") || lower.ends_with(".ecproj") || lower.ends_with(".ecprojx")
 }
 
 /// Read a project file (JSON or its XML copy), as File ▸ Open does.

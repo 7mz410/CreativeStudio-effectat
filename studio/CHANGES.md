@@ -7,6 +7,8 @@ this list.
   the bundle id `ps.creative.studio.effectat`, Help links to studio.creative.ps and this repository. Crate names
   and file formats keep their upstream names.
 - App icon: the effectat tile (`assets/app-icon/`).
+- Save format: projects save as `.effectat` (the same contents as `.ecproj`, which still opens), with the
+  effectat document icon (`assets/app-icon/effectat-document.*`); applied by `studio/rebrand.py`.
 - Removed upstream's ArtCraft brand assets (`docs/brand/`), as their brand terms require of forks.
 - README and NOTICE: the fork, its credits and the Creative Studio suite.
 - The ArtCraft mark (tools bar, About) gives way to the effectat icon; the Help menu's links

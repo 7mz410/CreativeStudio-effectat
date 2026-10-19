@@ -342,7 +342,7 @@ fn autosave_errors_preserve_tool_success_retry_and_fail_shutdown() {
 #[test]
 fn autosave_keeps_sessions_and_desktop_recovery_separate() {
     let dir = autosave_test_dir("isolated");
-    let desktop_save = dir.join(effectcraft_engine::autosave::AUTOSAVE_FOLDER).join("Untitled Project auto-save 1.ecproj");
+    let desktop_save = dir.join(effectcraft_engine::autosave::AUTOSAVE_FOLDER).join("Untitled Project auto-save 1.effectat");
     std::fs::create_dir_all(desktop_save.parent().unwrap()).unwrap();
     std::fs::write(&desktop_save, "desktop backup").unwrap();
     std::fs::write(dir.join("session.lock"), "desktop sentinel").unwrap();
@@ -886,7 +886,7 @@ fn autosave_isolation_also_applies_to_engine_autosaves_and_preference_changes() 
     let dir = autosave_test_dir("engine-save");
     let desktop = dir.join("DesktopCustom");
     std::fs::create_dir_all(&desktop).unwrap();
-    std::fs::write(desktop.join("Untitled Project auto-save 1.ecproj"), "desktop backup").unwrap();
+    std::fs::write(desktop.join("Untitled Project auto-save 1.effectat"), "desktop backup").unwrap();
     let mut session = Session::default();
     session.prefs.auto_save.location = "custom".into();
     session.prefs.auto_save.folder = desktop.to_string_lossy().into_owned();
@@ -912,7 +912,7 @@ fn autosave_isolation_also_applies_to_engine_autosaves_and_preference_changes() 
     assert!(std::fs::read_to_string(current["latestPath"].as_str().unwrap()).unwrap().contains("Latest isolated edit"));
     let recovery = call_json(&mut s, "execute_command", json!({"command":"file.recoveryInfo"}));
     assert_eq!(recovery["folder"], status["folder"]);
-    assert_eq!(std::fs::read_to_string(desktop.join("Untitled Project auto-save 1.ecproj")).unwrap(), "desktop backup");
+    assert_eq!(std::fs::read_to_string(desktop.join("Untitled Project auto-save 1.effectat")).unwrap(), "desktop backup");
     assert_eq!(std::fs::read_dir(&desktop).unwrap().count(), 2, "only the original desktop file and the MCP subfolder");
     std::fs::remove_dir_all(dir).unwrap();
 }

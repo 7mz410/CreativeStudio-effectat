@@ -832,7 +832,7 @@ fn atomic_write_survives_a_crash_mid_write() {
     assert_eq!(std::fs::read(&f).unwrap(), b"version 1");
     assert_eq!(names(&d), ["p.ecproj"], "the partial temp file is cleaned up");
     // A temp file left by a hard kill doesn't count as an auto-save.
-    std::fs::write(d.join("p auto-save 1.ecproj.tmp"), b"junk").unwrap();
+    std::fs::write(d.join("p auto-save 1.effectat.tmp"), b"junk").unwrap();
     assert!(autosave::existing(&d, "p").is_empty());
     atomic_write(&f, b"version 3").unwrap();
     assert_eq!(std::fs::read(&f).unwrap(), b"version 3");
@@ -855,11 +855,11 @@ fn autosave_rotates_through_max_versions() {
     let names: Vec<String> = written.iter().map(|p| PathBuf::from(p).file_name().unwrap().to_string_lossy().to_string()).collect();
     assert_eq!(
         names,
-        ["Intro auto-save 1.ecproj", "Intro auto-save 2.ecproj", "Intro auto-save 3.ecproj", "Intro auto-save 1.ecproj", "Intro auto-save 2.ecproj"]
+        ["Intro auto-save 1.effectat", "Intro auto-save 2.effectat", "Intro auto-save 3.effectat", "Intro auto-save 1.effectat", "Intro auto-save 2.effectat"]
     );
     let have: Vec<u32> = autosave::existing(&folder, "Intro").iter().map(|e| e.0).collect();
     assert_eq!(have, [1, 2, 3]);
-    let slot2 = std::fs::read_to_string(folder.join("Intro auto-save 2.ecproj")).unwrap();
+    let slot2 = std::fs::read_to_string(folder.join("Intro auto-save 2.effectat")).unwrap();
     assert!(slot2.contains("save4"), "slot 2 holds the newest save");
     // The project file itself is untouched and still dirty.
     assert!(s.is_dirty());
@@ -890,7 +890,7 @@ fn autosave_tick_waits_for_the_interval_and_changes() {
     s.execute("layer.newNull", json!({})).unwrap();
     assert!(s.autosave_tick(1030.0).is_none(), "interval not reached");
     let p = s.autosave_tick(1061.0).unwrap().unwrap();
-    assert!(p.contains("custom") && p.ends_with("T auto-save 1.ecproj"), "{p}");
+    assert!(p.contains("custom") && p.ends_with("T auto-save 1.effectat"), "{p}");
     assert!(s.autosave_tick(1200.0).is_none(), "nothing changed since");
     s.execute("prefs.set", json!({"key": "autoSave.enabled", "value": false})).unwrap();
     s.execute("layer.newNull", json!({})).unwrap();

@@ -50,36 +50,37 @@
   <array>
     <dict>
       <key>CFBundleTypeName</key>
-      <string>EffectCraft Project</string>
+      <string>effectat Project</string>
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>LSHandlerRank</key>
       <string>Owner</string>
       <key>CFBundleTypeIconFile</key>
-      <string>EffectCraft</string>
+      <string>effectat-document</string>
       <key>LSItemContentTypes</key>
       <array><string>ai.storyteller.effectcraft.document</string></array>
     </dict>
   </array>
-  <!-- EffectCraft's own format: the project (.ecproj) and its XML copy (.ecprojx). -->
+  <!-- effectat's own format: the project (.effectat; .ecproj still opens) and its XML copy (.ecprojx). -->
   <key>UTExportedTypeDeclarations</key>
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
       <string>ai.storyteller.effectcraft.document</string>
       <key>UTTypeDescription</key>
-      <string>EffectCraft Project</string>
+      <string>effectat Project</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
         <string>public.content</string>
       </array>
       <key>UTTypeIconFile</key>
-      <string>EffectCraft</string>
+      <string>effectat-document</string>
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.filename-extension</key>
         <array>
+          <string>effectat</string>
           <string>ecproj</string>
           <string>ecprojx</string>
         </array>

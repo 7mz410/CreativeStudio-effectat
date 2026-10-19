@@ -654,7 +654,7 @@ impl OutputFormat {
 }
 
 /// Project file extensions: never a render's output.
-const PROJECT_EXTENSIONS: [&str; 2] = ["ecproj", "ecprojx"];
+const PROJECT_EXTENSIONS: [&str; 3] = ["effectat", "ecproj", "ecprojx"];
 
 /// An output `path` without the project extensions a save dialog filtered to projects appended
 /// to it (`Comp 1.mov.ecproj` → `Comp 1.mov`, #293).

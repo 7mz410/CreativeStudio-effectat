@@ -77,9 +77,9 @@ fn project_lifecycle() {
     let c = qa.exec("file.collectFiles", json!({"folder": collected}));
     assert_eq!((c["copied"].clone(), c["errors"].clone()), (json!(1), json!([])), "Collect Files makes its folder: {c}");
     let files: Vec<String> = walk(&qa.dir.join("collected"));
-    assert!(files.iter().any(|f| f.ends_with(".ecproj")) && files.iter().any(|f| f.ends_with("logo.png")), "{files:?}");
+    assert!(files.iter().any(|f| f.ends_with(".effectat")) && files.iter().any(|f| f.ends_with("logo.png")), "{files:?}");
     std::fs::remove_file(qa.dir.join("media/logo.png")).unwrap();
-    let cproj = files.iter().find(|f| f.ends_with(".ecproj")).unwrap().clone();
+    let cproj = files.iter().find(|f| f.ends_with(".effectat")).unwrap().clone();
     let reo = qa.tool("open_project", json!({"path": cproj}));
     let cm = reo["items"].as_array().unwrap().iter().find(|i| i["name"] == "Main").unwrap()["id"].clone();
     assert!(mean_diff(&before, &qa.frame(Some(cm), 0.0)) < 1e-9, "the collected project finds its footage");

@@ -32,7 +32,7 @@ pub fn pending(folder: &Path) -> std::io::Result<Vec<PathBuf>> {
             let p = e?.path();
             if p.is_dir() {
                 subdirs.push(p);
-            } else if p.extension().is_some_and(|x| x.eq_ignore_ascii_case("ecproj")) && !status_path(&p).exists() {
+            } else if p.extension().and_then(|x| x.to_str()).is_some_and(effectcraft_project::is_project_ext) && !status_path(&p).exists() {
                 out.push(p);
             }
         }

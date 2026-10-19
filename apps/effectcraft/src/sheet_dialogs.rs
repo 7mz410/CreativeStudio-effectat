@@ -48,7 +48,7 @@ fn open(dialog: FileDialog) -> Answer {
             }
         }
         FileDialog::OpenProject => {
-            let f = AsyncFileDialog::new().add_filter("effectat Project", &["ecproj", "ecprojx"]).pick_file();
+            let f = AsyncFileDialog::new().add_filter("effectat Project", &["effectat", "ecproj", "ecprojx"]).pick_file();
             Box::pin(async move { path(f.await) })
         }
         FileDialog::Folder => {
@@ -59,7 +59,7 @@ fn open(dialog: FileDialog) -> Answer {
             let at = std::path::Path::new(&default);
             let name = at.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
             let mut d = if project {
-                AsyncFileDialog::new().add_filter("effectat Project", &["ecproj"])
+                AsyncFileDialog::new().add_filter("effectat Project", &["effectat", "ecproj"])
             } else if ext.is_empty() {
                 AsyncFileDialog::new()
             } else {
