@@ -211,6 +211,9 @@ EXT_FILES = {
         ('const EXT: &str = "ecproj";', 'const EXT: &str = effectcraft_project::STUDIO_EXTENSION;'),
         ('auto-save N.ecproj', 'auto-save N.effectat'),
     ],
+    'apps/effectcraft-web/src/store.rs': [
+        ('Untitled Project auto-save 1.ecproj"));', 'Untitled Project auto-save 1.effectat"));'),
+    ],
     'crates/engine/src/commands/file_more.rs': [
         ('format!("{folder}/{stem}.ecproj")', 'format!("{folder}/{stem}.{}", effectcraft_project::STUDIO_EXTENSION)'),
     ],
