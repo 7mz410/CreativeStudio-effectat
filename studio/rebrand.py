@@ -28,7 +28,7 @@ RTL_RULES = [
     icons::paint(&p, Rect::from_center_size(pos2(discord.min.x + 17.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);
     p.galley(pos2(discord.min.x + 30.0, cy - label.size().y / 2.0), label, Color32::WHITE);
 """, ''),
-    ('crates/ui-egui/tests/ui_keyframes.rs', 'assert_eq!(copied, ["EffectCraft: 1 keyframe"]', 'assert_eq!(copied, ["effectat: 1 keyframe"]'),
+    ('crates/ui-egui/tests/it/ui_keyframes.rs', 'assert_eq!(copied, ["EffectCraft: 1 keyframe"]', 'assert_eq!(copied, ["effectat: 1 keyframe"]'),
     ('crates/ui-egui/tests/ui_panels.rs', """    // Padding 10, the 14 px icon, a 6 px gap, the text, padding 12.
     assert!((e.rect[2] - (text + 42.0)).abs() < 0.5, "{} for a {text} px label", e.rect[2]);""", """    // Creative Studio: no Discord pill; its slot is empty.
     let _ = text;
@@ -131,6 +131,8 @@ def apply_rtl_rules() -> list:
     changed = []
     for rel, a, b in RTL_RULES:
         path = ROOT / rel
+        if not path.exists():
+            continue
         src = path.read_text(encoding='utf-8')
         if (not b or b not in src) and a in src:
             path.write_text(src.replace(a, b), encoding='utf-8')
