@@ -268,7 +268,7 @@ EXT_FILES = {
         ('position(|x| x.ends_with(".ecproj"))', 'position(|x| x.ends_with(".effectat") || x.ends_with(".ecproj"))'),
     ],
     'crates/engine/src/lib.rs': [
-        ('#[cfg(test)]\nmod tests_settings;\n', '#[cfg(test)]\nmod tests_settings;\n#[cfg(test)]\nmod tests_studio_ext;\n'),
+        ('#[cfg(test)]\nmod tests_stubs;\n', '#[cfg(test)]\nmod tests_stubs;\n#[cfg(test)]\nmod tests_studio_ext;\n'),
     ],
     'studio/CHANGES.md': [
         ('- App icon: the effectat tile (`assets/app-icon/`).\n',

@@ -1296,8 +1296,13 @@ mod tests {
         for category in &categories {
             assert!(SIMPLIFIED_CHINESE_CATEGORIES.iter().any(|(english, _)| english == category), "no catalog row for category {category}");
         }
-        for (language, rows) in [("zh-hans", SIMPLIFIED_CHINESE_CATEGORIES), ("zh-hant", TRADITIONAL_CHINESE_CATEGORIES), ("ja", JAPANESE_CATEGORIES), ("ar", ARABIC_CATEGORIES), ("ka", GEORGIAN_CATEGORIES)]
-        {
+        for (language, rows) in [
+            ("zh-hans", SIMPLIFIED_CHINESE_CATEGORIES),
+            ("zh-hant", TRADITIONAL_CHINESE_CATEGORIES),
+            ("ja", JAPANESE_CATEGORIES),
+            ("ar", ARABIC_CATEGORIES),
+            ("ka", GEORGIAN_CATEGORIES),
+        ] {
             for (english, translated) in rows {
                 assert!(categories.contains(english), "{language} lists {english}, which is not a category");
                 assert!(!translated.is_empty(), "empty {language} translation for {english}");
