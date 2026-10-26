@@ -104,6 +104,8 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$WORK/bin/effectcraft" "$APP/Contents/MacOS/EffectCraft"
 cp "$ROOT/assets/app-icon/effectcraft.icns" "$APP/Contents/Resources/EffectCraft.icns"
 cp "$ROOT/assets/app-icon/effectat-document.icns" "$APP/Contents/Resources/effectat-document.icns"
+# Required embedded-font notices are independent of optional font inputs.
+cp "$ROOT/NOTICE" "$APP/Contents/Resources/NOTICE"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@SHORT_VERSION@/$SHORT_VERSION/g" \
   -e "s/@BUILD_SHA@/${EFFECTCRAFT_BUILD_SHA:-unknown}/g" \
   "$HERE/Info.plist.in" >"$APP/Contents/Info.plist"
